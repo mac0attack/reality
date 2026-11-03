@@ -1,0 +1,1949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Married at First Watch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script>
+    // Hide deleted shows via CSS BEFORE page paints (runs in <head>)
+    (function() {
+      try {
+        var deleted = JSON.parse(localStorage.getItem('rtvDeletedShows') || '[]');
+        if (deleted.length) {
+          var css = deleted.map(function(id) {
+            return '[data-show-id="' + id + '"]';
+          }).join(',') + '{ display:none !important; }';
+          var style = document.createElement('style');
+          style.id = 'deleted-shows-css';
+          style.textContent = css;
+          document.head.appendChild(style);
+        }
+      } catch(e) {}
+    })();
+  </script>
+  <style>
+    :root {
+      --bg: #FFFFFF;
+      --bg-card: #FAFAFA;
+      --bg-card-hover: #F3F3F3;
+      --ink: #1C1C1E;
+      --ink-light: #6B6B6E;
+      --ink-muted: #9A9A9D;
+      --rule: #1C1C1E;
+      --red: #8B7355;
+      --blue: #7A8A9A;
+      /* Metallic palette — saturated with gloss */
+      --silver: #6E7075;
+      --silver-light: #A8AAAE;
+      --silver-bg: linear-gradient(145deg, #EAEBEE 0%, #D8DADF 50%, #ECEDF0 100%);
+      --silver-bg-flat: #E4E5E9;
+      --silver-bg-hover-flat: #D5D6DB;
+      --gold: #8B6914;
+      --gold-light: #B8922E;
+      --gold-bg: linear-gradient(145deg, #F5EDD6 0%, #E8D9AD 50%, #F7F0D8 100%);
+      --gold-bg-flat: #EFE5C8;
+      --gold-bg-hover-flat: #E5D8B2;
+      --net-peacock: var(--silver);
+      --net-peacock-bg: var(--silver-bg-flat);
+      --net-peacock-bg-hover: var(--silver-bg-hover-flat);
+      --net-max: var(--gold);
+      --net-max-bg: var(--gold-bg-flat);
+      --net-max-bg-hover: var(--gold-bg-hover-flat);
+      --net-hulu: var(--silver);
+      --net-hulu-bg: var(--silver-bg-flat);
+      --net-hulu-bg-hover: var(--silver-bg-hover-flat);
+      --net-youtube: var(--gold);
+      --net-youtube-bg: var(--gold-bg-flat);
+      --net-youtube-bg-hover: var(--gold-bg-hover-flat);
+      --radius: 0px;
+      --font: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 0;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before, body::after { display: none; }
+
+    .dashboard {
+      max-width: 1400px; margin: 0 auto;
+      padding: 2.5rem calc(4vw + 1rem) 5rem;
+      position: relative; z-index: 1;
+    }
+    .schedule-panel { margin-left: 0; margin-right: 0; }
+
+    /*  Header — compressed, schedule-forward  */
+    .header {
+      text-align: left;
+      margin-bottom: 1.8rem;
+      display: flex; align-items: baseline; gap: 1.2rem; flex-wrap: wrap;
+    }
+    .header h1 {
+      font-family: var(--font);
+      font-size: clamp(1.1rem, 2.4vw, 1.6rem);
+      font-weight: 900; letter-spacing: -.02em; line-height: 1;
+      text-transform: uppercase;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .header h1 span {
+      font-size: .65em;
+      font-weight: 400;
+      letter-spacing: .15em;
+      color: var(--gold);
+      margin-left: .6rem;
+    }
+    .header p {
+      color: var(--ink-muted); font-size: .65rem;
+      letter-spacing: .08em;
+      text-transform: uppercase; font-weight: 500;
+    }
+
+    /*  Streaming services — demoted footer  */
+    .services-footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #E4E5E9;
+    }
+    .services-footer .services-label {
+      font-family: var(--font); font-size: .55rem; font-weight: 600;
+      letter-spacing: .15em; text-transform: uppercase;
+      color: var(--ink-muted); margin-bottom: .6rem;
+    }
+    .services-footer .badges {
+      display: flex; gap: .4rem; flex-wrap: wrap;
+    }
+    .services-footer .badge {
+      display: inline-block;
+      font-family: var(--font); font-weight: 700; font-size: .55rem;
+      letter-spacing: .12em; text-transform: uppercase;
+      padding: .3rem .65rem;
+      border: none; border-radius: 0;
+      cursor: pointer; user-select: none;
+      transition: all .15s ease;
+    }
+    .services-footer .badge:hover { opacity: .8; }
+    .services-footer .badge.active { opacity: 1; }
+    .services-footer .badge.dimmed { opacity: .15; }
+    .badge-peacock, .badge-hulu { background: linear-gradient(135deg, #7D7F83 0%, #5C5E62 100%); color: #fff; }
+    .badge-max, .badge-youtube { background: linear-gradient(135deg, #A67B1A 0%, #7A5810 100%); color: #fff; }
+
+    /*  Tab Navigation  */
+    .tab-bar {
+      display: flex; gap: 0; margin-bottom: 1.8rem;
+    }
+    .tab-btn {
+      font-family: var(--font); font-size: .6rem; font-weight: 800;
+      letter-spacing: .18em; text-transform: uppercase;
+      padding: .7rem 1.5rem;
+      background: transparent; border: none; border-bottom: 3px solid transparent;
+      color: var(--ink-muted);
+      cursor: pointer; transition: color .15s, border-color .15s;
+    }
+    .tab-btn:first-child { padding-left: 0; }
+    .tab-btn:hover { color: var(--ink); }
+    .tab-btn.active {
+      color: var(--ink);
+      border-bottom-color: var(--gold);
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* disco-ball removed */
+
+    /*  Section Labels  */
+    .section-label {
+      font-family: var(--font);
+      font-size: .6rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .2em; color: var(--ink);
+      margin-bottom: .8rem; margin-top: .2rem;
+      display: flex; align-items: center; gap: .75rem;
+    }
+    .section-label::before,
+    .section-label::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--silver-light); opacity: .6;
+    }
+
+    /*  Show Cards — colored by network  */
+    .shows {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 340px));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .show-card-wrapper {
+      position: relative;
+      padding-bottom: 8px;
+      z-index: 1;
+      display: flex; flex-direction: column;
+    }
+    .show-card-wrapper.open { z-index: 30; }
+
+    .show-card {
+      background: var(--bg-card);
+      border: none;
+      border-radius: 0;
+      padding: 1.1rem 1.2rem;
+      display: flex; gap: .9rem; align-items: flex-start;
+      transition: background .12s;
+      position: relative; z-index: 2; cursor: pointer;
+      flex: 1;
+    }
+    .show-card-wrapper.open .show-card { transform: none; }
+
+    /* Network-based card fills — metallic gradient (silver = peacock/hulu, gold = max/youtube) */
+    [data-networks*="peacock"] > .show-card,
+    [data-networks*="hulu"] > .show-card { background: linear-gradient(145deg, #EAEBEE 0%, #D8DADF 50%, #ECEDF0 100%); }
+    [data-networks*="peacock"] > .show-card:hover, [data-networks*="peacock"].open > .show-card,
+    [data-networks*="hulu"] > .show-card:hover, [data-networks*="hulu"].open > .show-card { background: linear-gradient(145deg, #DFE0E4 0%, #CDD0D5 50%, #E2E3E7 100%); }
+
+    [data-networks*="max"] > .show-card,
+    [data-networks*="youtube"] > .show-card { background: linear-gradient(145deg, #F5EDD6 0%, #E8D9AD 50%, #F7F0D8 100%); }
+    [data-networks*="max"] > .show-card:hover, [data-networks*="max"].open > .show-card,
+    [data-networks*="youtube"] > .show-card:hover, [data-networks*="youtube"].open > .show-card { background: linear-gradient(145deg, #EDE3C0 0%, #DECE9E 50%, #EFE7C4 100%); }
+
+    .show-info { flex: 1; min-width: 0; }
+    .show-info h3 {
+      font-family: var(--font);
+      font-size: .82rem; font-weight: 700;
+      margin-bottom: .15rem; letter-spacing: 0;
+      color: var(--ink);
+    }
+
+    .show-meta { font-size: .7rem; color: var(--ink-light); line-height: 1.55; }
+    .show-meta strong { color: var(--ink); font-weight: 600; }
+
+    .network-tag {
+      display: inline-block; font-size: .48rem; font-weight: 700;
+      font-family: var(--font);
+      letter-spacing: .1em; text-transform: uppercase;
+      padding: .2rem .55rem; border-radius: 0; margin-top: .25rem;
+      border: none; color: #fff;
+    }
+    .tag-peacock, .tag-hulu { background: linear-gradient(135deg, #7D7F83 0%, #5C5E62 100%); }
+    .tag-max, .tag-youtube  { background: linear-gradient(135deg, #A67B1A 0%, #7A5810 100%); }
+
+    /*  Cast Bubbles  clean circles  */
+    .cast-row {
+      position: absolute; bottom: -4px;
+      left: 0; right: 0; margin: 0 auto;
+      display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
+      z-index: 10; pointer-events: none;
+      padding: 0;
+      transform: translateY(100%);
+    }
+    .cast-bubble {
+      width: 90px;
+      flex-shrink: 0;
+      border: none; cursor: pointer;
+      opacity: 0; transform: translateY(-8px) scale(.8);
+      transition: opacity .2s ease, transform .25s ease;
+      position: relative;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .cast-bubble img {
+      width: 90px; height: 90px;
+      object-fit: contain; display: block;
+      border-radius: 50%; overflow: hidden;
+      filter: grayscale(.15);
+      padding: 6px;
+      background: var(--bg-card);
+      transition: filter .2s ease, box-shadow .2s ease;
+    }
+    .cast-bubble .bubble-name {
+      font-family: var(--font); font-size: .6rem; font-weight: 700;
+      color: #fff; text-align: center;
+      text-shadow: 0 1px 3px rgba(0,0,0,.7);
+      margin-top: 4px; line-height: 1.2;
+      max-width: 90px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+      letter-spacing: .02em;
+      transition: color .2s ease;
+    }
+    .cast-bubble.icon-flag img {
+      object-fit: cover; padding: 0;
+      filter: grayscale(0);
+    }
+    .cast-bubble.icon-fish img {
+      padding: 4px;
+      filter: grayscale(0);
+    }
+    .show-card-wrapper.open .cast-bubble { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+    .cast-bubble:nth-child(1)  { transition-delay: .00s; }
+    .cast-bubble:nth-child(2)  { transition-delay: .03s; }
+    .cast-bubble:nth-child(3)  { transition-delay: .06s; }
+    .cast-bubble:nth-child(4)  { transition-delay: .09s; }
+    .cast-bubble:nth-child(5)  { transition-delay: .12s; }
+    .cast-bubble:nth-child(6)  { transition-delay: .15s; }
+    .cast-bubble:nth-child(7)  { transition-delay: .18s; }
+    .cast-bubble:nth-child(8)  { transition-delay: .21s; }
+    .cast-bubble:nth-child(9)  { transition-delay: .24s; }
+    .cast-bubble:nth-child(10) { transition-delay: .27s; }
+
+    /* Network-colored bubbles — no borders */
+
+    .cast-bubble:hover { transform: translateY(-4px) scale(1.1); }
+    .cast-bubble:hover img { filter: grayscale(0) brightness(1.1); box-shadow: 0 4px 12px rgba(0,0,0,.35); }
+    .cast-bubble:hover .bubble-name { color: #fff; }
+    .cast-bubble.friend img { border: 2.5px dashed rgba(0,0,0,.5); }
+
+    /*  Schedule Panel — Bayer frame  */
+    .schedule-panel {
+      background: none;
+      border: none;
+      border-radius: 0;
+      padding: 0;
+      margin-top: 0;
+      position: relative;
+      box-shadow: none;
+      overflow: visible;
+      max-width: none;
+    }
+    .schedule-panel::before {
+      display: none;
+    }
+
+    .week-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 1px;
+      background: var(--silver-bg);
+      margin-left: -.9rem;
+    }
+    .day {
+      background: var(--bg);
+      border: none; border-radius: 0;
+      padding: 1rem .9rem; min-height: 200px;
+      display: flex; flex-direction: column;
+      transition: background .12s;
+    }
+    .day:hover { background: var(--bg-card-hover); }
+    .day.today {
+      background: linear-gradient(180deg, #FAF6EC 0%, #F5EDD6 100%);
+      box-shadow: inset 0 -3px 0 var(--gold);
+    }
+    .day-name {
+      font-family: var(--font);
+      font-size: .7rem; font-weight: 900;
+      text-transform: uppercase; letter-spacing: .2em;
+      color: var(--ink); margin-bottom: .7rem;
+      padding-bottom: .4rem;
+      border-bottom: 1px solid rgba(0,0,0,.04);
+    }
+    .day.today .day-name { color: var(--gold); border-bottom-color: var(--gold); }
+
+    /*  Shows Panel  */
+    .shows-panel {
+      background: transparent;
+      border: none; border-radius: 0;
+      padding: 0; margin-top: 0;
+      position: relative; overflow: visible;
+      box-shadow: none;
+    }
+    .shows-panel::before { display: none; }
+
+    /*  Day Slots — network-colored fills  */
+    .day-slot {
+      border-radius: 0; padding: .5rem .6rem;
+      margin-bottom: .4rem; font-size: .7rem; line-height: 1.4;
+      cursor: pointer; transition: opacity .12s;
+      position: relative;
+      border: none;
+      background: rgba(0,0,0,.04);
+    }
+    .day-slot:hover { opacity: .85; }
+    .day-slot.open { opacity: 1; z-index: 50; }
+    .day-slot .time { font-weight: 800; display: block; margin-bottom: .08rem; font-family: var(--font); font-size: .58rem; text-transform: uppercase; letter-spacing: .12em; color: inherit; opacity: .6; }
+    .day-slot .title { font-weight: 700; font-size: .78rem; color: inherit; display: block; }
+    .day-slot .net { font-size: .5rem; color: inherit; opacity: .6; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+
+    /* Network fills for calendar slots — metallic gradient */
+    .day-slot[data-networks*="peacock"] { background: linear-gradient(145deg, #EAEBEE 0%, #D8DADF 50%, #ECEDF0 100%); color: var(--silver); }
+    .day-slot[data-networks*="max"]     { background: linear-gradient(145deg, #F5EDD6 0%, #E8D9AD 50%, #F7F0D8 100%); color: var(--gold); }
+    .day-slot[data-networks*="hulu"]    { background: linear-gradient(145deg, #EAEBEE 0%, #D8DADF 50%, #ECEDF0 100%); color: var(--silver); }
+    .day-slot[data-networks*="youtube"] { background: linear-gradient(145deg, #F5EDD6 0%, #E8D9AD 50%, #F7F0D8 100%); color: var(--gold); }
+
+    .day-slot .recap-box {
+      display: none;
+      position: absolute; left: 50%; transform: translateX(-50%);
+      top: calc(100% + 5px);
+      width: 260px; max-width: 90vw;
+      padding: .6rem .7rem;
+      background: var(--bg-card);
+      border: 2px solid var(--silver-bg);
+      border-radius: 0;
+      box-shadow: 0 4px 20px rgba(0,0,0,.06);
+      z-index: 50; pointer-events: none;
+    }
+    .day-slot .recap-box::before {
+      content: '';
+      position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+      border: 6px solid transparent; border-bottom-color: var(--silver-bg);
+    }
+    .day-slot.open .recap-box { display: block; pointer-events: auto; }
+
+    .day-slot .recap {
+      font-size: .6rem; line-height: 1.55; color: var(--ink);
+      padding-bottom: .25rem; margin-bottom: .25rem;
+      border-bottom: 2px solid rgba(0,0,0,.06);
+    }
+    .day-slot .recap strong {
+      display: block; font-size: .48rem; text-transform: uppercase;
+      letter-spacing: .1em; margin-bottom: .1rem;
+      color: var(--ink-muted); font-weight: 700;
+    }
+    .day-slot .preview {
+      font-size: .55rem; line-height: 1.5;
+      padding: .25rem .4rem;
+      background: transparent;
+      border-radius: 0; border-left: 3px solid var(--gold);
+      color: var(--ink);
+    }
+    .day-slot .preview strong {
+      display: block; font-size: .45rem; text-transform: uppercase;
+      letter-spacing: .1em; margin-bottom: .08rem;
+      color: var(--gold); font-weight: 800;
+    }
+
+    /* Slot colors now handled by [data-networks] selectors above */
+
+    .empty-day {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      color: rgba(0,0,0,.08); font-size: .65rem;
+    }
+
+    /*  Filter states  */
+    .show-card-wrapper.filtered-out {
+      opacity: .03; pointer-events: none;
+      transition: opacity .2s;
+    }
+    .day-slot.filtered-out {
+      opacity: .03; pointer-events: none;
+      max-height: 2.5rem; overflow: hidden;
+      transition: opacity .2s, max-height .2s;
+    }
+
+    /*  Add Show — grid-aligned card  */
+    .section-label-row {
+      display: flex; align-items: center; gap: .6rem;
+      position: relative;
+    }
+    .add-show-card {
+      position: relative;
+      min-height: 80px;
+      display: flex; flex-direction: column;
+      cursor: pointer;
+    }
+    .add-show-card-inner {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center; gap: .5rem;
+      background: linear-gradient(145deg, #EAEBEE 0%, #D5D6DA 50%, #E8E9EC 100%);
+      transition: background .15s;
+      padding: 1.1rem 1.2rem;
+    }
+    .add-show-card:hover .add-show-card-inner {
+      background: linear-gradient(145deg, #E0E1E5 0%, #CBCCD0 50%, #DEDFE3 100%);
+    }
+    .add-show-card.active .add-show-card-inner {
+      flex-direction: column; gap: .4rem;
+    }
+    .add-show-card.active .add-show-plus,
+    .add-show-card.active .add-show-label { display: none; }
+    .add-show-plus {
+      font-family: var(--font); font-size: 1.6rem; font-weight: 300;
+      color: var(--silver); line-height: 1;
+    }
+    .add-show-label {
+      font-family: var(--font); font-size: .6rem; font-weight: 800;
+      letter-spacing: .15em; text-transform: uppercase;
+      color: var(--silver);
+    }
+
+    .add-show-inline {
+      display: none; width: 100%;
+      flex-direction: column; gap: .4rem; align-items: stretch;
+    }
+    .add-show-card.active .add-show-inline { display: flex; }
+    .add-show-inline input {
+      width: 100%; padding: .4rem .5rem; border-radius: 0;
+      background: var(--bg); border: 1px solid rgba(0,0,0,.15);
+      color: var(--ink); font-family: var(--font); font-size: .72rem; outline: none;
+      box-sizing: border-box;
+    }
+    .add-show-inline input:focus { border-color: var(--ink); }
+    .add-show-inline input::placeholder { color: var(--ink-muted); }
+
+    .add-show-go {
+      padding: .3rem .6rem; border-radius: 0;
+      background: linear-gradient(135deg, #A67B1A 0%, #7A5810 100%); border: none;
+      color: #fff; font-family: var(--font);
+      font-size: .55rem; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; cursor: pointer;
+      transition: background .12s;
+    }
+    .add-show-go:hover { background: var(--gold-light); }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /*  Delete Buttons  */
+    .delete-btn {
+      position: absolute; top: 6px; right: 6px;
+      width: 18px; height: 18px; border-radius: 0;
+      background: transparent; border: none;
+      color: var(--silver-light); font-size: .75rem; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; opacity: 0; transition: opacity .12s, color .12s;
+      z-index: 5; padding: 0;
+    }
+    .show-card:hover .delete-btn { opacity: .5; }
+    .delete-btn:hover { opacity: 1 !important; color: var(--gold); }
+
+    .day-slot { position: relative; }
+    .day-slot .slot-delete {
+      position: absolute; top: 3px; right: 3px;
+      width: 15px; height: 15px; border-radius: 0;
+      background: transparent; border: none;
+      color: var(--silver-light); font-size: .65rem; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; opacity: 0; transition: opacity .12s, color .12s;
+      z-index: 5; padding: 0;
+    }
+    .day-slot:hover .slot-delete { opacity: .5; }
+    .day-slot .slot-delete:hover { opacity: 1 !important; color: var(--gold); }
+
+    /*  Responsive  */
+    @media (max-width: 900px) {
+      .week-grid { grid-template-columns: 1fr; }
+      .day { min-height: auto; }
+      .dashboard { padding: 2.5rem 1.5rem; }
+      .schedule-panel { margin-left: 0; margin-right: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="dashboard">
+
+    <!-- Header — compressed -->
+    <div class="header">
+      <h1>Married at First Watch</h1>
+      <p id="schedule-date">Current schedule</p>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="schedule">Upcoming Schedule</button>
+      <button class="tab-btn" data-tab="shows">All Shows</button>
+    </div>
+
+    <!-- ═══════════ TAB: WEEKLY GRID ═══════════ -->
+    <div class="tab-content active" id="tab-schedule">
+    <div class="schedule-panel">
+      <p id="refresh-status" role="status" aria-live="polite" style="font-size:.75rem;color:var(--ink-light);margin-bottom:.6rem">Loading current episodes from TVMaze...</p>
+      <p style="font-size:.7rem;color:var(--ink-light);margin-bottom:1.2rem">Next listed episode per show, grouped by expected streaming weekday (not limited to this week). Next-day streaming dates are estimates, not confirmed availability. Shows without announced episodes remain in All Shows.</p>
+      <noscript>Enable JavaScript to load the current schedule.</noscript>
+      <div class="week-grid">
+
+      <!-- SUNDAY -->
+      <div class="day" data-day="0">
+        <div class="day-name">Sunday</div>
+        <div class="empty-day">—</div>
+      </div>
+
+      <!-- MONDAY -->
+      <div class="day" data-day="1">
+        <div class="day-name">Monday</div>
+        <div class="empty-day">—</div>
+      </div>
+
+      <!-- TUESDAY -->
+      <div class="day" data-day="2">
+        <div class="day-name">Tuesday</div>
+        <div class="empty-day">—</div>
+      </div>
+
+      <!-- WEDNESDAY -->
+      <div class="day" data-day="3">
+        <div class="day-name">Wednesday</div>
+        <div class="empty-day">—</div>
+      </div>
+
+      <!-- THURSDAY -->
+      <div class="day" data-day="4">
+        <div class="day-name">Thursday</div>
+        <div class="empty-day">—</div>
+      </div>
+
+      <!-- FRIDAY -->
+      <div class="day" data-day="5">
+        <div class="day-name">Friday</div>
+        <div class="empty-day">—</div>
+      </div>
+
+      <!-- SATURDAY -->
+      <div class="day" data-day="6">
+        <div class="day-name">Saturday</div>
+        <div class="empty-day">—</div>
+      </div>
+
+    </div>
+    </div><!-- /schedule-panel -->
+    </div><!-- /tab-schedule -->
+
+    <!-- ═══════════ TAB: ALL SHOWS ═══════════ -->
+    <div class="tab-content" id="tab-shows">
+    <div class="shows-panel" style="margin-top:1.5rem">
+    <div class="section-label-row">
+      <div class="section-label" style="margin-bottom:.6rem; font-weight:400; opacity:.45; font-size:.72rem; letter-spacing:.01em; text-transform:none">Tap a card to see cast &amp; details</div>
+    </div>
+    <div class="shows">
+
+      <!-- Add Show card — first cell in grid -->
+      <div class="add-show-card" id="addShowTrigger">
+        <div class="add-show-card-inner">
+          <span class="add-show-plus">+</span>
+          <span class="add-show-label">Add Show</span>
+          <div class="add-show-inline">
+            <input type="text" id="addShowInput" placeholder="Show name...">
+            <button class="add-show-go" id="addShowBtn">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="show-card-wrapper atlanta" data-networks="peacock" data-show-id="atlanta">
+        <div class="show-card">
+          <div class="show-info">
+            <h3>RH of Atlanta</h3>
+            <div class="show-meta">
+              Loading current episode info...
+            </div>
+            <span class="network-tag tag-peacock">Peacock</span>
+          </div>
+<button class="delete-btn" title="Remove show">&times;</button>
+        </div>
+        <div class="cast-row">
+          <div class="cast-bubble" data-name="Porsha Williams"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=PorshaWilliams&backgroundColor=ffd5dc" alt=""></div>
+          <div class="cast-bubble" data-name="Phaedra Parks"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=PhaedraParks&backgroundColor=ffd5dc" alt=""></div>
+          <div class="cast-bubble" data-name="Drew Sidora"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=DrewSidora&backgroundColor=ffd5dc" alt=""></div>
+          <div class="cast-bubble" data-name="Shamea Morton"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=ShameaMorton&backgroundColor=ffd5dc" alt=""></div>
+          <div class="cast-bubble" data-name="Angela Oakley"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=AngelaOakley&backgroundColor=ffd5dc" alt=""></div>
+          <div class="cast-bubble" data-name="Kelli Ferrell"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=KelliFerrell&backgroundColor=ffd5dc" alt=""></div>
+          <div class="cast-bubble" data-name="Pinky Cole"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=PinkyCole&backgroundColor=ffd5dc" alt=""></div>
+          <div class="cast-bubble" data-name="K. Michelle"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=KMichelle&backgroundColor=ffd5dc" alt=""></div>
+          <div class="cast-bubble friend" data-name="Cynthia Bailey"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=CynthiaBailey&backgroundColor=ffd5dc" alt=""></div>
+        </div>
+      </div>
+
+      <div class="show-card-wrapper rhode" data-networks="peacock" data-show-id="rhode">
+        <div class="show-card">
+          <div class="show-info">
+            <h3>RH of Rhode Island</h3>
+            <div class="show-meta">
+              Loading current episode info...
+            </div>
+            <span class="network-tag tag-peacock">Peacock</span>
+          </div>
+<button class="delete-btn" title="Remove show">&times;</button>
+        </div>
+        <div class="cast-row">
+          <div class="cast-bubble" data-name="Alicia Carmody"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=AliciaCarmody&backgroundColor=c0f0ed" alt=""></div>
+          <div class="cast-bubble" data-name="Rosie DiMare"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=RosieDiMare&backgroundColor=c0f0ed" alt=""></div>
+          <div class="cast-bubble" data-name="Ashley Iaconetti"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=AshleyIaconetti&backgroundColor=c0f0ed" alt=""></div>
+          <div class="cast-bubble" data-name="Liz McGraw"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=LizMcGraw&backgroundColor=c0f0ed" alt=""></div>
+          <div class="cast-bubble" data-name="Rulla Pontarelli"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=RullaPontarelli&backgroundColor=c0f0ed" alt=""></div>
+          <div class="cast-bubble" data-name="Kelsey Swanson"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=KelseySwanson&backgroundColor=c0f0ed" alt=""></div>
+          <div class="cast-bubble" data-name="Jo-Ellen Tiberi"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=JoEllenTiberi&backgroundColor=c0f0ed" alt=""></div>
+          <div class="cast-bubble friend" data-name="Dolores Catania"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=DoloresCatania&backgroundColor=c0f0ed" alt=""></div>
+        </div>
+      </div>
+
+      <div class="show-card-wrapper bevhills" data-networks="peacock" data-show-id="bevhills">
+        <div class="show-card">
+          <div class="show-info">
+            <h3>RH of Beverly Hills</h3>
+            <div class="show-meta">
+              Loading current episode info...
+            </div>
+            <span class="network-tag tag-peacock">Peacock</span>
+          </div>
+<button class="delete-btn" title="Remove show">&times;</button>
+        </div>
+        <div class="cast-row">
+          <div class="cast-bubble" data-name="Kyle Richards"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=KyleRichards&backgroundColor=e8d5ff" alt=""></div>
+          <div class="cast-bubble" data-name="Erika Jayne"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=ErikaJayne&backgroundColor=e8d5ff" alt=""></div>
+          <div class="cast-bubble" data-name="Dorit Kemsley"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=DoritKemsley&backgroundColor=e8d5ff" alt=""></div>
+          <div class="cast-bubble" data-name="Sutton Stracke"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=SuttonStracke&backgroundColor=e8d5ff" alt=""></div>
+          <div class="cast-bubble" data-name="Bozoma Saint John"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=BozomaSaintJohn&backgroundColor=e8d5ff" alt=""></div>
+          <div class="cast-bubble" data-name="Amanda Frances"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=AmandaFrances&backgroundColor=e8d5ff" alt=""></div>
+          <div class="cast-bubble" data-name="Rachel Zoe"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=RachelZoe&backgroundColor=e8d5ff" alt=""></div>
+          <div class="cast-bubble friend" data-name="Kathy Hilton"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=KathyHilton&backgroundColor=e8d5ff" alt=""></div>
+          <div class="cast-bubble friend" data-name="Jennifer Tilly"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=JenniferTilly&backgroundColor=e8d5ff" alt=""></div>
+        </div>
+      </div>
+
+      <div class="show-card-wrapper ninetyb90" data-networks="max" data-show-id="90day">
+        <div class="show-card">
+          <div class="show-info">
+            <h3>90 Day: Before the 90 Days</h3>
+            <div class="show-meta">
+              Loading current episode info...
+            </div>
+            <span class="network-tag tag-max">Max</span>
+          </div>
+<button class="delete-btn" title="Remove show">&times;</button>
+        </div>
+        <div class="cast-row">
+          <div class="cast-bubble" data-name="Jovon"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=JovonB90&backgroundColor=ffe0c0" alt=""></div>
+          <div class="cast-bubble" data-name="Annalyn"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=AnnalynB90&backgroundColor=ffe0c0" alt=""></div>
+          <div class="cast-bubble" data-name="Laura"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=LauraB90&backgroundColor=ffe0c0" alt=""></div>
+          <div class="cast-bubble" data-name="Birkan"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=BirkanB90&backgroundColor=ffe0c0" alt=""></div>
+          <div class="cast-bubble" data-name="Forrest"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=ForrestB90&backgroundColor=ffe0c0" alt=""></div>
+          <div class="cast-bubble" data-name="Sheena"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=SheenaB90&backgroundColor=ffe0c0" alt=""></div>
+          <div class="cast-bubble" data-name="Lisa"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=LisaB90&backgroundColor=ffe0c0" alt=""></div>
+          <div class="cast-bubble" data-name="Daniel"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=DanielB90&backgroundColor=ffe0c0" alt=""></div>
+          <div class="cast-bubble" data-name="Rick"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=RickB90&backgroundColor=ffe0c0" alt=""></div>
+          <div class="cast-bubble" data-name="Trisha"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=TrishaB90&backgroundColor=ffe0c0" alt=""></div>
+          <div class="cast-bubble" data-name="Aviva"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=AvivaB90&backgroundColor=ffe0c0" alt=""></div>
+          <div class="cast-bubble" data-name="Stig"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=StigB90&backgroundColor=ffe0c0" alt=""></div>
+          <div class="cast-bubble" data-name="Emma"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=EmmaB90&backgroundColor=ffe0c0" alt=""></div>
+          <div class="cast-bubble" data-name="Ziad"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=ZiadB90&backgroundColor=ffe0c0" alt=""></div>
+          <div class="cast-bubble" data-name="Elise"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=EliseB90&backgroundColor=ffe0c0" alt=""></div>
+          <div class="cast-bubble" data-name="Joshua"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=JoshuaB90&backgroundColor=ffe0c0" alt=""></div>
+        </div>
+      </div>
+
+      <div class="show-card-wrapper ninetysingle" data-networks="max" data-show-id="90single">
+        <div class="show-card">
+          <div class="show-info">
+            <h3>90 Day: The Single Life</h3>
+            <div class="show-meta">
+              Loading current episode info...
+            </div>
+            <span class="network-tag tag-max">Max</span>
+          </div>
+<button class="delete-btn" title="Remove show">&times;</button>
+        </div>
+        <div class="cast-row">
+          <div class="cast-bubble" data-name="Gino Palazzolo"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=GinoPalazzolo&backgroundColor=fff3c0" alt=""></div>
+          <div class="cast-bubble" data-name="Sophie Sierra"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=SophieSierra&backgroundColor=fff3c0" alt=""></div>
+          <div class="cast-bubble" data-name="Liz Woods"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=LizWoods&backgroundColor=fff3c0" alt=""></div>
+          <div class="cast-bubble" data-name="Colt Johnson"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=ColtJohnson&backgroundColor=fff3c0" alt=""></div>
+          <div class="cast-bubble" data-name="Cortney Reardanz"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=CortneyReardanz&backgroundColor=fff3c0" alt=""></div>
+          <div class="cast-bubble" data-name="Pedro Jimeno"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=PedroJimeno&backgroundColor=fff3c0" alt=""></div>
+          <div class="cast-bubble" data-name="Kim Menzies"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=KimMenzies&backgroundColor=fff3c0" alt=""></div>
+          <div class="cast-bubble" data-name="Vanja Grbic"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=VanjaGrbic&backgroundColor=fff3c0" alt=""></div>
+        </div>
+      </div>
+
+      <div class="show-card-wrapper ladies" data-networks="peacock" data-show-id="ladies">
+        <div class="show-card">
+          <div class="show-info">
+            <h3>Ladies of London: The New Reign</h3>
+            <div class="show-meta">
+              Loading current episode info...
+            </div>
+            <span class="network-tag tag-peacock">Peacock</span>
+          </div>
+<button class="delete-btn" title="Remove show">&times;</button>
+        </div>
+        <div class="cast-row">
+          <div class="cast-bubble" data-name="Lady Emma Thynn"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=EmmaThynn&backgroundColor=ffd5e0" alt=""></div>
+          <div class="cast-bubble" data-name="Martha Sitwell"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=MarthaSitwell&backgroundColor=ffd5e0" alt=""></div>
+          <div class="cast-bubble" data-name="Mark-Francis Vandelli"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=MarkFrancisVandelli&backgroundColor=ffd5e0" alt=""></div>
+          <div class="cast-bubble" data-name="Lottie Kane"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=LottieKane&backgroundColor=ffd5e0" alt=""></div>
+          <div class="cast-bubble" data-name="Missè Beqiri"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=MisseBeqiri&backgroundColor=ffd5e0" alt=""></div>
+          <div class="cast-bubble" data-name="Kimi Murdoch"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=KimiMurdoch&backgroundColor=ffd5e0" alt=""></div>
+          <div class="cast-bubble" data-name="Myka Meier"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=MykaMeier&backgroundColor=ffd5e0" alt=""></div>
+          <div class="cast-bubble" data-name="Margo Stilley"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=MargoStilley&backgroundColor=ffd5e0" alt=""></div>
+        </div>
+      </div>
+
+      <div class="show-card-wrapper belowdeck" data-networks="peacock" data-show-id="belowdeck">
+        <div class="show-card">
+          <div class="show-info">
+            <h3>Below Deck Down Under</h3>
+            <div class="show-meta">
+              Loading current episode info...
+            </div>
+            <span class="network-tag tag-peacock">Peacock</span>
+          </div>
+<button class="delete-btn" title="Remove show">&times;</button>
+        </div>
+        <div class="cast-row">
+          <div class="cast-bubble" data-name="Captain Jason Chambers"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=JasonChambers&backgroundColor=c0e8f0" alt=""></div>
+          <div class="cast-bubble" data-name="Chef Ben Robinson"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=BenRobinson&backgroundColor=c0e8f0" alt=""></div>
+          <div class="cast-bubble" data-name="Daisy Kelliher"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=DaisyKelliher&backgroundColor=c0e8f0" alt=""></div>
+          <div class="cast-bubble" data-name="João Franco"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=JoaoFranco&backgroundColor=c0e8f0" alt=""></div>
+          <div class="cast-bubble" data-name="Jenna Woudberg"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=JennaWoudberg&backgroundColor=c0e8f0" alt=""></div>
+          <div class="cast-bubble" data-name="Eddy Hounsell"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=EddyHounsell&backgroundColor=c0e8f0" alt=""></div>
+          <div class="cast-bubble" data-name="Mike Durrant"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=MikeDurrant&backgroundColor=c0e8f0" alt=""></div>
+          <div class="cast-bubble" data-name="Alesia Harris"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=AlesiaHarris&backgroundColor=c0e8f0" alt=""></div>
+          <div class="cast-bubble" data-name="Betul Yazici"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=BetulYazici&backgroundColor=c0e8f0" alt=""></div>
+        </div>
+      </div>
+
+      <div class="show-card-wrapper valley" data-networks="peacock" data-show-id="valley">
+        <div class="show-card">
+          <div class="show-info">
+            <h3>The Valley</h3>
+            <div class="show-meta">
+              Loading current episode info...
+            </div>
+            <span class="network-tag tag-peacock">Peacock</span>
+          </div>
+<button class="delete-btn" title="Remove show">&times;</button>
+        </div>
+        <div class="cast-row">
+          <div class="cast-bubble" data-name="Brittany Cartwright"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=BrittanyCartwright&backgroundColor=ffd5d5" alt=""></div>
+          <div class="cast-bubble" data-name="Kristen Doute"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=KristenDoute&backgroundColor=ffd5d5" alt=""></div>
+          <div class="cast-bubble" data-name="Luke Broderick"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=LukeBroderick&backgroundColor=ffd5d5" alt=""></div>
+          <div class="cast-bubble" data-name="Danny Booko"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=DannyBooko&backgroundColor=ffd5d5" alt=""></div>
+          <div class="cast-bubble" data-name="Nia Sanchez"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=NiaSanchez&backgroundColor=ffd5d5" alt=""></div>
+          <div class="cast-bubble" data-name="Jason Caperna"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=JasonCaperna&backgroundColor=ffd5d5" alt=""></div>
+          <div class="cast-bubble" data-name="Janet Caperna"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=JanetCaperna&backgroundColor=ffd5d5" alt=""></div>
+          <div class="cast-bubble" data-name="Jasmine Goode"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=JasmineGoode&backgroundColor=ffd5d5" alt=""></div>
+          <div class="cast-bubble" data-name="Jesse Lally"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=JesseLally&backgroundColor=ffd5d5" alt=""></div>
+          <div class="cast-bubble" data-name="Michelle Saniei"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=MichelleSaniei&backgroundColor=ffd5d5" alt=""></div>
+          <div class="cast-bubble" data-name="Zack Wickham"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=ZackWickham&backgroundColor=ffd5d5" alt=""></div>
+          <div class="cast-bubble" data-name="Lala Kent"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=LalaKent&backgroundColor=ffd5d5" alt=""></div>
+          <div class="cast-bubble" data-name="Tom Schwartz"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=TomSchwartz&backgroundColor=ffd5d5" alt=""></div>
+        </div>
+      </div>
+
+      <div class="show-card-wrapper hospitality" data-networks="peacock" data-show-id="hospitality">
+        <div class="show-card">
+          <div class="show-info">
+            <h3>Southern Hospitality</h3>
+            <div class="show-meta">
+              Loading current episode info...
+            </div>
+            <span class="network-tag tag-peacock">Peacock</span>
+          </div>
+<button class="delete-btn" title="Remove show">&times;</button>
+        </div>
+        <div class="cast-row">
+          <div class="cast-bubble" data-name="Leva Bonaparte"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=LevaBonaparte&backgroundColor=c0f0d0" alt=""></div>
+          <div class="cast-bubble" data-name="Joe Bradley"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=JoeBradley&backgroundColor=c0f0d0" alt=""></div>
+          <div class="cast-bubble" data-name="Maddi Reese"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=MaddiReese&backgroundColor=c0f0d0" alt=""></div>
+          <div class="cast-bubble" data-name="Mia Alario"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=MiaAlario&backgroundColor=c0f0d0" alt=""></div>
+          <div class="cast-bubble" data-name="Grace Lilly"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=GraceLilly&backgroundColor=c0f0d0" alt=""></div>
+          <div class="cast-bubble" data-name="Bradley Carter"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=BradleyCarter&backgroundColor=c0f0d0" alt=""></div>
+          <div class="cast-bubble" data-name="Emmy Sharrett"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=EmmySharrett&backgroundColor=c0f0d0" alt=""></div>
+          <div class="cast-bubble" data-name="TJ Dinch"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=TJDinch&backgroundColor=c0f0d0" alt=""></div>
+          <div class="cast-bubble" data-name="Lake Rucker"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=LakeRucker&backgroundColor=c0f0d0" alt=""></div>
+          <div class="cast-bubble" data-name="Will Kulp"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=WillKulp&backgroundColor=c0f0d0" alt=""></div>
+          <div class="cast-bubble" data-name="Molly Moore"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=MollyMooreSH&backgroundColor=c0f0d0" alt=""></div>
+          <div class="cast-bubble" data-name="Justin Assad"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=JustinAssad&backgroundColor=c0f0d0" alt=""></div>
+          <div class="cast-bubble" data-name="Bella Starcher"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=BellaStarcher&backgroundColor=c0f0d0" alt=""></div>
+        </div>
+      </div>
+
+      <div class="show-card-wrapper charm" data-networks="peacock" data-show-id="charm">
+        <div class="show-card">
+          <div class="show-info">
+            <h3>Southern Charm</h3>
+            <div class="show-meta">
+              Loading current episode info...
+            </div>
+            <span class="network-tag tag-peacock">Peacock</span>
+          </div>
+<button class="delete-btn" title="Remove show">&times;</button>
+        </div>
+        <div class="cast-row">
+          <div class="cast-bubble" data-name="Craig Conover"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=CraigConover&backgroundColor=ffe0c8" alt=""></div>
+          <div class="cast-bubble" data-name="Austen Kroll"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=AustenKroll&backgroundColor=ffe0c8" alt=""></div>
+          <div class="cast-bubble" data-name="Shep Rose"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=ShepRose&backgroundColor=ffe0c8" alt=""></div>
+          <div class="cast-bubble" data-name="Madison LeCroy"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=MadisonLeCroy&backgroundColor=ffe0c8" alt=""></div>
+          <div class="cast-bubble" data-name="Venita Aspen"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=VenitaAspen&backgroundColor=ffe0c8" alt=""></div>
+          <div class="cast-bubble" data-name="Rodrigo Reyes"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=RodrigoReyes&backgroundColor=ffe0c8" alt=""></div>
+          <div class="cast-bubble" data-name="Salley Carson"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=SalleyCarson&backgroundColor=ffe0c8" alt=""></div>
+          <div class="cast-bubble" data-name="Charley Manley"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=CharleyManley&backgroundColor=ffe0c8" alt=""></div>
+          <div class="cast-bubble" data-name="Whitner Slagsvol"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=WhitnerSlagsvol&backgroundColor=ffe0c8" alt=""></div>
+          <div class="cast-bubble friend" data-name="Patricia Altschul"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=PatriciaAltschul&backgroundColor=ffe0c8" alt=""></div>
+          <div class="cast-bubble friend" data-name="Whitney Sudler-Smith"><img src="https://api.dicebear.com/9.x/avataaars/svg?seed=WhitneySudlerSmith&backgroundColor=ffe0c8" alt=""></div>
+        </div>
+      </div>
+
+    </div>
+    </div><!-- /shows-panel -->
+    </div><!-- /tab-shows -->
+
+    <!-- Streaming services — demoted below content -->
+    <div class="services-footer">
+      <div class="services-label">Streaming Services</div>
+      <p style="font-size:.7rem;color:var(--ink-light);margin-bottom:.8rem">Episode data: <a href="https://www.tvmaze.com" target="_blank" rel="noopener">TVMaze</a> (<a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA</a>). Added and removed shows are saved only in this browser.</p>
+      <div class="badges">
+        <span class="badge badge-peacock" data-filter="peacock">Peacock</span>
+        <span class="badge badge-max" data-filter="max">HBO / Max</span>
+        <span class="badge badge-hulu" data-filter="hulu">Hulu</span>
+        <span class="badge badge-youtube" data-filter="youtube">YouTube</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ══════════ HIGHLIGHT TODAY (user's local timezone) ══════════
+    const todayNum = new Date().getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    const todayEl = document.querySelector(`.day[data-day="${todayNum}"]`);
+    if (todayEl) todayEl.classList.add('today');
+
+    // ══════════ TAB SWITCHING ══════════
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // ══════════ CONSTANTS ══════════
+    const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+    // Restore empty-day placeholder if a day column has no remaining slots
+    function restoreEmptyDay(dayCol) {
+      if (!dayCol || dayCol.querySelector('.day-slot') || dayCol.querySelector('.empty-day')) return;
+      const empty = document.createElement('div');
+      empty.className = 'empty-day';
+      empty.textContent = '—';
+      dayCol.appendChild(empty);
+    }
+
+    // ══════════ APPLY DELETIONS FIRST (before anything renders interactively) ══════════
+    function getDeletedShows() {
+      try { return JSON.parse(localStorage.getItem('rtvDeletedShows') || '[]'); } catch { return []; }
+    }
+
+    (function applyDeletions() {
+      const deleted = getDeletedShows();
+      deleted.forEach(id => {
+        document.querySelectorAll(`[data-show-id="${id}"]`).forEach(el => {
+          const dayCol = el.closest('.day');
+          el.remove();
+          restoreEmptyDay(dayCol);
+        });
+      });
+    })();
+
+    // ══════════ DELETE HANDLER ══════════
+    function saveDeletedShow(id) {
+      const deleted = getDeletedShows();
+      if (!deleted.includes(id)) deleted.push(id);
+      localStorage.setItem('rtvDeletedShows', JSON.stringify(deleted));
+      // Update the head CSS rule so hiding is immediate
+      let style = document.getElementById('deleted-shows-css');
+      if (!style) {
+        style = document.createElement('style');
+        style.id = 'deleted-shows-css';
+        document.head.appendChild(style);
+      }
+      style.textContent = deleted.map(i => `[data-show-id="${i}"]`).join(',') + '{ display:none !important; }';
+    }
+
+    function deleteShow(showId, showName) {
+      if (!showId) { console.warn('Cannot delete: no show ID'); return; }
+      if (!confirm(`Remove "${showName}" from your schedule?`)) return;
+
+      // Remove all show cards with this ID
+      document.querySelectorAll(`.show-card-wrapper[data-show-id="${showId}"]`).forEach(el => el.remove());
+      // Remove all day slots with this ID
+      document.querySelectorAll(`.day-slot[data-show-id="${showId}"]`).forEach(el => {
+        const dayCol = el.closest('.day');
+        el.remove();
+        restoreEmptyDay(dayCol);
+      });
+
+      // Persist: remove from added shows & add to deleted list
+      saveDeletedShow(showId);
+      try {
+        const added = JSON.parse(localStorage.getItem('rtvAddedShows') || '[]');
+        const filtered = added.filter(s => s.id !== showId);
+        localStorage.setItem('rtvAddedShows', JSON.stringify(filtered));
+      } catch(e) {}
+    }
+
+    // Event delegation for delete buttons
+
+    // ══════════ CLICK TOGGLE — CARDS (event delegation) ══════════
+    function getAllWrappers() { return document.querySelectorAll('.show-card-wrapper'); }
+
+    function closeAllCards() {
+      getAllWrappers().forEach(w => w.classList.remove('open'));
+    }
+
+    function handleCardClick(e) {
+      const wrapper = e.target.closest('.show-card-wrapper');
+      if (!wrapper || e.target.closest('.delete-btn')) return;
+      e.stopPropagation();
+      const wasOpen = wrapper.classList.contains('open');
+      closeAllCards();
+      if (!wasOpen) {
+        wrapper.classList.add('open');
+        setTimeout(() => {
+          wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 60);
+      }
+    }
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { closeAllCards(); closeAllSlots(); }
+    });
+
+    // ══════════ CLICK TOGGLE — DAY SLOTS ══════════
+    function closeAllSlots() {
+      document.querySelectorAll('.day-slot').forEach(s => s.classList.remove('open'));
+    }
+
+    function handleSlotClick(e) {
+      const slot = e.target.closest('.day-slot');
+      if (!slot || e.target.closest('.slot-delete')) return;
+      e.stopPropagation();
+      const wasOpen = slot.classList.contains('open');
+      closeAllSlots();
+      if (!wasOpen) slot.classList.add('open');
+    }
+
+    // ══════════ CAST BUBBLE CLICKS ══════════
+    function handleBubbleClick(e) {
+      const bubble = e.target.closest('.cast-bubble');
+      if (!bubble) return;
+      e.stopPropagation();
+      const name = bubble.getAttribute('data-name');
+      if (!name) return;
+      const query = encodeURIComponent(name + ' reality TV biography');
+      window.open('https://www.google.com/search?q=' + query, '_blank', 'noopener');
+    }
+
+    // ══════════ UNIFIED EVENT DELEGATION ══════════
+    document.addEventListener('click', (e) => {
+      // Delete buttons (handled first, stop propagation)
+      const delBtn = e.target.closest('.delete-btn');
+      if (delBtn) {
+        e.stopPropagation();
+        const wrapper = delBtn.closest('.show-card-wrapper');
+        if (wrapper) {
+          const showId = wrapper.dataset.showId;
+          const name = wrapper.querySelector('.show-info h3')?.textContent || 'this show';
+          deleteShow(showId, name);
+        }
+        return;
+      }
+      const slotDel = e.target.closest('.slot-delete');
+      if (slotDel) {
+        e.stopPropagation();
+        const slot = slotDel.closest('.day-slot');
+        if (slot) {
+          const showId = slot.dataset.showId;
+          const name = slot.querySelector('.title')?.textContent || 'this show';
+          deleteShow(showId, name);
+        }
+        return;
+      }
+
+      // Cast bubble clicks
+      if (e.target.closest('.cast-bubble')) { handleBubbleClick(e); return; }
+
+      // Show card clicks
+      if (e.target.closest('.show-card')) { handleCardClick(e); return; }
+
+      // Day slot clicks
+      if (e.target.closest('.day-slot')) { handleSlotClick(e); return; }
+
+      // Outside click — close everything
+      closeAllCards();
+      closeAllSlots();
+    });
+
+    // ══════════ NETWORK FILTER ══════════
+    let activeFilter = null;
+    const badges = document.querySelectorAll('.badge[data-filter]');
+
+    function applyFilter() {
+      const cards = document.querySelectorAll('.show-card-wrapper[data-networks]');
+      const slots = document.querySelectorAll('.day-slot[data-networks]');
+
+      badges.forEach(b => {
+        b.classList.remove('active', 'dimmed');
+        if (activeFilter) {
+          if (b.dataset.filter === activeFilter) b.classList.add('active');
+          else b.classList.add('dimmed');
+        }
+      });
+      cards.forEach(card => {
+        if (!activeFilter) card.classList.remove('filtered-out');
+        else {
+          const nets = card.dataset.networks.split(' ');
+          card.classList.toggle('filtered-out', !nets.includes(activeFilter));
+        }
+      });
+      slots.forEach(slot => {
+        if (!activeFilter) slot.classList.remove('filtered-out');
+        else {
+          const nets = slot.dataset.networks.split(' ');
+          slot.classList.toggle('filtered-out', !nets.includes(activeFilter));
+        }
+      });
+    }
+
+    badges.forEach(badge => {
+      badge.addEventListener('click', () => {
+        const net = badge.dataset.filter;
+        activeFilter = (activeFilter === net) ? null : net;
+        applyFilter();
+      });
+    });
+
+    // Clean up vestigial settings from localStorage
+    try { localStorage.removeItem('rtvSettings'); } catch(e) {}
+
+    // ══════════ ADD SHOW (TVMaze API lookup) ══════════
+
+    // Cast database for known shows
+    const knownCasts = {
+      'summer-house': [
+        'Kyle Cooke','Amanda Batula','Carl Radke','Lindsay Hubbard',
+        'Paige DeSorbo','Ciara Miller','Gabby Prescod','Jesse Solomon',
+        'West Wilson','Lexi Wood'
+      ],
+      'real-housewives-of-orange-county': [
+        'Tamra Judge','Heather Dubrow','Shannon Beador','Gina Kirschenheiter',
+        'Emily Simpson','Jennifer Pedranti','Katie Ginella'
+      ],
+      'the-real-housewives-of-orange-county': [
+        'Tamra Judge','Heather Dubrow','Shannon Beador','Gina Kirschenheiter',
+        'Emily Simpson','Jennifer Pedranti','Katie Ginella'
+      ],
+      'real-housewives-of-the-potomac': [
+        'Gizelle Bryant','Ashley Darby','Wendy Osefo','Stacey Rusch',
+        'Keiarna Stewart','Tia Glover','Angel Massie'
+      ],
+      'the-real-housewives-of-the-potomac': [
+        'Gizelle Bryant','Ashley Darby','Wendy Osefo','Stacey Rusch',
+        'Keiarna Stewart','Tia Glover','Angel Massie'
+      ],
+      'the-real-housewives-of-potomac': [
+        'Gizelle Bryant','Ashley Darby','Wendy Osefo','Stacey Rusch',
+        'Keiarna Stewart','Tia Glover','Angel Massie'
+      ],
+      'love-island': [
+        'Ariana Madix','Rob Rausch','Leah Kateb','Miguel Harichi',
+        'Serena Page','Kordell Beckham','JaNa Craig','Kenny Rodriguez',
+        'Andrea Carmona','Aaron Evans','Daia McGhee','Hakeem White'
+      ],
+      'love-island-usa': [
+        'Ariana Madix','Rob Rausch','Leah Kateb','Miguel Harichi',
+        'Serena Page','Kordell Beckham','JaNa Craig','Kenny Rodriguez',
+        'Andrea Carmona','Aaron Evans','Daia McGhee','Hakeem White'
+      ],
+      'bob-s-burgers': [
+        'Bob Belcher','Linda Belcher','Tina Belcher','Gene Belcher',
+        'Louise Belcher','Teddy','Jimmy Pesto','Mort'
+      ],
+      'bobs-burgers': [
+        'Bob Belcher','Linda Belcher','Tina Belcher','Gene Belcher',
+        'Louise Belcher','Teddy','Jimmy Pesto','Mort'
+      ],
+      'welcome-to-plathville': [
+        'Kim Plath','Barry Plath','Ethan Plath','Olivia Plath',
+        'Moriah Plath','Micah Plath','Lydia Plath','Isaac Plath',
+        'Amber Plath','Cassia Plath'
+      ],
+      'plathville': [
+        'Kim Plath','Barry Plath','Ethan Plath','Olivia Plath',
+        'Moriah Plath','Micah Plath','Lydia Plath','Isaac Plath',
+        'Amber Plath','Cassia Plath'
+      ],
+      'the-traitors': [
+        'Alan Cumming','Parvati Shallow','CT Tamburello',
+        'Phaedra Parks','Dan Gheesling','Sandra Diaz-Twine',
+        'Bob the Drag Queen','Dolores Catania','Ciara Miller',
+        'Wells Adams','Britney Haynes','Danielle Reyes'
+      ],
+      'traitors': [
+        'Alan Cumming','Parvati Shallow','CT Tamburello',
+        'Phaedra Parks','Dan Gheesling','Sandra Diaz-Twine',
+        'Bob the Drag Queen','Dolores Catania','Ciara Miller',
+        'Wells Adams','Britney Haynes','Danielle Reyes'
+      ],
+      'vanderpump-rules': [
+        'Lisa Vanderpump','Tom Sandoval','Ariana Madix','Tom Schwartz',
+        'Katie Maloney','Scheana Shay','Lala Kent','James Kennedy',
+        'Brock Davies','Ally Lewber','Jo Wenberg'
+      ],
+      'sister-wives': [
+        'Kody Brown','Meri Brown','Janelle Brown','Christine Brown',
+        'Robyn Brown','Logan Brown','Aspyn Thompson','Mykelti Padron',
+        'Maddie Brush','Paedon Brown','Gwendlyn Brown','Ysabel Brown'
+      ],
+      'rhode': [
+        'Teresa Aprea','Gina Lundy','Leah McSweeney','Jenn Fessler',
+        'Sai De Silva','Bren Afoa','Natalie Mariduena','Eliana Zapata'
+      ],
+      'real-housewives-of-rhode-island': [
+        'Teresa Aprea','Gina Lundy','Leah McSweeney','Jenn Fessler',
+        'Sai De Silva','Bren Afoa','Natalie Mariduena','Eliana Zapata'
+      ],
+      'secret-lives-of-mormon-wives': [
+        'Taylor Frankie Paul','Demi Engemann','Whitney Leavitt',
+        'Mayci Neeley','Jessi Ngatikaura','Jennifer Affleck',
+        'Layla Taylor','Mikayla Mathews'
+      ],
+      'mormon-wives': [
+        'Taylor Frankie Paul','Demi Engemann','Whitney Leavitt',
+        'Mayci Neeley','Jessi Ngatikaura','Jennifer Affleck',
+        'Layla Taylor','Mikayla Mathews'
+      ],
+    };
+
+    // ══════════ SVG ICON DATA ══════════
+    const bagShapes = [
+      `<path d="M18 52h64v-24c0-4-2-7-6-8l-4-6c-1-2-3-3-5-3h-26c-2 0-4 1-5 3l-4 6c-4 1-6 4-6 8v24z" fill="FILL"/><path d="M38 14c0-4 4-6 12-6s12 2 12 6" fill="none" stroke="STROKE" stroke-width="3" stroke-linecap="round"/><rect x="42" y="24" width="16" height="6" rx="2" fill="STROKE" opacity=".4"/><line x1="50" y1="28" x2="50" y2="52" stroke="STROKE" stroke-width=".5" opacity=".15"/>`,
+      `<rect x="20" y="24" width="60" height="32" rx="3" fill="FILL"/><path d="M20 30h60" stroke="STROKE" stroke-width="1.5" opacity=".3"/><path d="M30 14c0-3 8-5 20-5s20 2 20 5" fill="none" stroke="ACCENT" stroke-width="2"/><circle cx="50" cy="30" r="4" fill="STROKE" opacity=".35"/><line x1="30" y1="36" x2="70" y2="36" stroke="STROKE" stroke-width=".5" opacity=".12"/><line x1="30" y1="42" x2="70" y2="42" stroke="STROKE" stroke-width=".5" opacity=".12"/><line x1="30" y1="48" x2="70" y2="48" stroke="STROKE" stroke-width=".5" opacity=".12"/>`,
+      `<path d="M22 52h56v-30c0-2-1-4-3-4h-50c-2 0-3 2-3 4v30z" fill="FILL"/><path d="M32 18c0-6 6-10 18-10s18 4 18 10" fill="none" stroke="STROKE" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="22" x2="50" y2="52" stroke="STROKE" stroke-width=".5" opacity=".1"/>`,
+      `<rect x="16" y="28" width="68" height="26" rx="4" fill="FILL"/><path d="M16 34h68" stroke="STROKE" stroke-width="1" opacity=".25"/><circle cx="70" cy="41" r="3.5" fill="STROKE" opacity=".3"/><rect x="24" y="36" width="32" height="1" rx=".5" fill="STROKE" opacity=".1"/>`,
+      `<path d="M26 52c0 0-4-8-4-20c0-10 8-16 28-16s28 6 28 16c0 12-4 20-4 20z" fill="FILL"/><path d="M36 16c0-4 6-7 14-7s14 3 14 7" fill="none" stroke="STROKE" stroke-width="2.5" stroke-linecap="round"/><ellipse cx="50" cy="30" rx="12" ry="3" fill="STROKE" opacity=".15"/>`,
+      `<path d="M24 52h52v-22c0-3-2-6-5-7l-3-5c-1-1.5-2.5-2.5-4-2.5h-20c-1.5 0-3 1-4 2.5l-3 5c-3 1-5 4-5 7v22z" fill="FILL"/><path d="M40 15c0-3 4-5 10-5s10 2 10 5" fill="none" stroke="STROKE" stroke-width="2.5" stroke-linecap="round"/><rect x="44" y="26" width="12" height="5" rx="1.5" fill="ACCENT" opacity=".5"/>`
+    ];
+    const hatShapes = [
+      `<ellipse cx="50" cy="48" rx="42" ry="8" fill="FILL"/><path d="M28 48c0-14 10-28 22-28s22 14 22 28" fill="FILL"/><ellipse cx="50" cy="48" rx="42" ry="8" fill="none" stroke="STROKE" stroke-width="1.5"/><path d="M34 34c4-2 10-3 16-3s12 1 16 3" fill="none" stroke="ACCENT" stroke-width="2"/>`,
+      `<ellipse cx="50" cy="46" rx="18" ry="6" fill="FILL"/><circle cx="50" cy="38" r="10" fill="FILL"/><path d="M52 28c4-10 14-18 18-16s-4 14-10 22" fill="ACCENT" opacity=".5"/><ellipse cx="50" cy="46" rx="18" ry="6" fill="none" stroke="STROKE" stroke-width="1"/><circle cx="48" cy="36" r="2" fill="STROKE" opacity=".4"/>`,
+      `<rect x="30" y="30" width="40" height="18" rx="3" fill="FILL"/><ellipse cx="50" cy="30" rx="20" ry="6" fill="FILL"/><ellipse cx="50" cy="30" rx="20" ry="6" fill="none" stroke="STROKE" stroke-width="1.2"/><path d="M42 30c0-2 4-4 8-4s8 2 8 4" fill="ACCENT" opacity=".3"/><circle cx="50" cy="24" r="3" fill="ACCENT" opacity=".5"/>`,
+      `<path d="M28 50c0 0-2-4-2-10c0-16 10-28 24-28s24 12 24 28c0 6-2 10-2 10z" fill="FILL"/><path d="M26 50h48" stroke="STROKE" stroke-width="2"/><path d="M60 36c4-2 8-1 10 2" fill="none" stroke="ACCENT" stroke-width="2.5" stroke-linecap="round"/>`,
+      `<ellipse cx="50" cy="44" rx="34" ry="8" fill="FILL"/><path d="M30 44c0-12 9-24 20-24s20 12 20 24" fill="FILL"/><ellipse cx="50" cy="44" rx="34" ry="8" fill="none" stroke="STROKE" stroke-width="1.5"/><rect x="38" y="34" width="24" height="3" rx="1" fill="ACCENT" opacity=".4"/>`,
+      `<rect x="34" y="16" width="32" height="28" rx="2" fill="FILL"/><ellipse cx="50" cy="44" rx="30" ry="7" fill="FILL"/><ellipse cx="50" cy="16" rx="16" ry="5" fill="FILL"/><ellipse cx="50" cy="44" rx="30" ry="7" fill="none" stroke="STROKE" stroke-width="1.5"/><rect x="38" y="34" width="24" height="3" rx="1" fill="ACCENT" opacity=".45"/>`
+    ];
+    const fishShapes = [
+      `<path d="M50 10c-12 8-20 18-20 26s8 18 20 26c12-8 20-18 20-26s-8-18-20-26z" fill="FILL"/><path d="M30 36l-14 10v-20l14 10z" fill="ACCENT" opacity=".7"/><circle cx="58" cy="32" r="2.5" fill="#fff"/><circle cx="59" cy="32" r="1.2" fill="#111"/><path d="M38 28c8-2 16-2 22 0" fill="none" stroke="STROKE" stroke-width="1" opacity=".3"/><path d="M38 38c8 2 16 2 22 0" fill="none" stroke="STROKE" stroke-width="1" opacity=".3"/>`,
+      `<ellipse cx="50" cy="36" rx="26" ry="16" fill="FILL"/><path d="M24 36l-10 12v-24l10 12z" fill="ACCENT" opacity=".6"/><path d="M76 36l8-8v16l-8-8z" fill="ACCENT" opacity=".6"/><rect x="42" y="20" width="4" height="32" rx="2" fill="#fff" opacity=".8"/><rect x="54" y="22" width="4" height="28" rx="2" fill="#fff" opacity=".8"/><circle cx="66" cy="33" r="2.5" fill="#fff"/><circle cx="67" cy="33" r="1.2" fill="#111"/>`,
+      `<ellipse cx="50" cy="36" rx="22" ry="18" fill="FILL"/><path d="M28 36l-12 8v-16l12 8z" fill="ACCENT"/><path d="M72 36l10-6v12l-10-6z" fill="ACCENT"/><path d="M50 18c-4 6-4 30 0 36" fill="none" stroke="STROKE" stroke-width="2" opacity=".25"/><circle cx="62" cy="32" r="2.5" fill="#fff"/><circle cx="63" cy="32" r="1.2" fill="#111"/><ellipse cx="38" cy="36" rx="5" ry="3" fill="STROKE" opacity=".2"/>`,
+      `<ellipse cx="52" cy="36" rx="18" ry="12" fill="FILL"/><path d="M34 36c-10-4-18-2-20 4c6 1 14-1 20-4z" fill="ACCENT" opacity=".5"/><path d="M34 30c-8-10-16-14-20-10c4 4 12 8 20 10z" fill="ACCENT" opacity=".4"/><path d="M34 42c-8 10-16 14-20 10c4-4 12-8 20-10z" fill="ACCENT" opacity=".4"/><circle cx="62" cy="33" r="2.5" fill="#fff"/><circle cx="63" cy="33" r="1.2" fill="#111"/><path d="M70 36l8-5v10l-8-5z" fill="FILL"/>`,
+      `<circle cx="50" cy="36" r="18" fill="FILL"/><circle cx="50" cy="36" r="14" fill="ACCENT" opacity=".2"/><circle cx="58" cy="32" r="3" fill="#fff"/><circle cx="59" cy="32" r="1.5" fill="#111"/><path d="M42 40a6 3 0 0 0 10 0" fill="none" stroke="STROKE" stroke-width="1.2"/><line x1="32" y1="30" x2="26" y2="26" stroke="STROKE" stroke-width="1.5"/><line x1="32" y1="42" x2="26" y2="46" stroke="STROKE" stroke-width="1.5"/><line x1="50" y1="18" x2="50" y2="12" stroke="STROKE" stroke-width="1.5"/><line x1="68" y1="30" x2="74" y2="26" stroke="STROKE" stroke-width="1.5"/><line x1="68" y1="42" x2="74" y2="46" stroke="STROKE" stroke-width="1.5"/>`,
+      `<path d="M50 8c-8 2-12 8-12 14c0 6 4 10 4 16c0 4-2 8-6 12c4 0 8-2 10-6c2 4 6 6 10 6c-4-4-6-8-6-12c0-6 4-10 4-16c0-6-4-12-4-14z" fill="FILL"/><circle cx="46" cy="20" r="2" fill="#fff"/><circle cx="47" cy="20" r="1" fill="#111"/><path d="M38 22c0 0 6 1 8 0" fill="none" stroke="STROKE" stroke-width=".8"/><path d="M54 26c4 2 8 6 10 12" fill="none" stroke="ACCENT" stroke-width="2" opacity=".5"/><path d="M54 22c2-2 6-2 8 0" fill="none" stroke="ACCENT" stroke-width="1.5" opacity=".4"/>`
+    ];
+    const cocktailShapes = [
+      `<path d="M30 14h40l-16 26v10h10v4H36v-4h10V40z" fill="FILL" stroke="STROKE" stroke-width="1.5"/><circle cx="56" cy="22" r="3" fill="ACCENT" opacity=".7"/><line x1="54" y1="14" x2="58" y2="8" stroke="ACCENT" stroke-width="1.5"/>`,
+      `<path d="M38 12c0 14-6 18-6 26h36c0-8-6-12-6-26z" fill="FILL" opacity=".85"/><rect x="47" y="38" width="6" height="12" rx="2" fill="STROKE"/><rect x="38" y="50" width="24" height="4" rx="2" fill="STROKE"/><ellipse cx="50" cy="12" rx="12" ry="3" fill="ACCENT" opacity=".3"/>`,
+      `<path d="M28 18h44l-14 22v8h8v4H34v-4h8V40z" fill="FILL" stroke="STROKE" stroke-width="1.2"/><path d="M28 18c0-2 10-4 22-4s22 2 22 4" fill="ACCENT" opacity=".5"/><circle cx="60" cy="12" r="5" fill="ACCENT" opacity=".6"/><line x1="60" y1="7" x2="60" y2="4" stroke="STROKE" stroke-width="1"/>`,
+      `<rect x="34" y="10" width="32" height="44" rx="4" fill="FILL" opacity=".8"/><rect x="34" y="10" width="32" height="44" rx="4" fill="none" stroke="STROKE" stroke-width="1.5"/><rect x="36" y="30" width="28" height="22" rx="3" fill="ACCENT" opacity=".25"/><circle cx="44" cy="38" r="3" fill="#fff" opacity=".3"/><circle cx="52" cy="44" r="2.5" fill="#fff" opacity=".25"/><line x1="58" y1="8" x2="58" y2="16" stroke="ACCENT" stroke-width="2" stroke-linecap="round"/>`,
+      `<path d="M44 10c0 16-4 20-4 30h20c0-10-4-14-4-30z" fill="FILL" opacity=".8"/><rect x="47" y="40" width="6" height="10" rx="2" fill="STROKE"/><rect x="40" y="50" width="20" height="3" rx="1.5" fill="STROKE"/><ellipse cx="50" cy="10" rx="6" ry="2.5" fill="ACCENT" opacity=".4"/><circle cx="48" cy="18" r="1.5" fill="#fff" opacity=".4"/><circle cx="52" cy="24" r="1" fill="#fff" opacity=".3"/>`,
+      `<path d="M30 22a20 12 0 0 0 40 0z" fill="FILL"/><path d="M30 22h40" stroke="STROKE" stroke-width="1.5"/><rect x="47" y="34" width="6" height="12" rx="2" fill="STROKE"/><rect x="38" y="46" width="24" height="4" rx="2" fill="STROKE"/><circle cx="44" cy="26" r="2" fill="ACCENT" opacity=".5"/><circle cx="54" cy="28" r="1.5" fill="ACCENT" opacity=".4"/>`
+    ];
+    const mulletShapes = [
+      `<path d="M50 8c-14 0-22 8-22 20c0 6 2 10 4 14h-4c-2 8 0 16 6 20h32c6-4 8-12 6-20h-4c2-4 4-8 4-14c0-12-8-20-22-20z" fill="FILL"/><path d="M32 42c-4 4-6 12-4 18c2-6 6-12 10-14" fill="ACCENT" opacity=".6"/><path d="M68 42c4 4 6 12 4 18c-2-6-6-12-10-14" fill="ACCENT" opacity=".6"/><ellipse cx="50" cy="28" rx="14" ry="10" fill="STROKE" opacity=".15"/>`,
+      `<path d="M50 6c-16 0-24 10-24 22c0 8 4 14 6 18c-2 2-4 6-4 10h44c0-4-2-8-4-10c2-4 6-10 6-18c0-12-8-22-24-22z" fill="FILL"/><path d="M28 28c-6 4-10 14-8 22" fill="none" stroke="ACCENT" stroke-width="3" opacity=".5"/><path d="M72 28c6 4 10 14 8 22" fill="none" stroke="ACCENT" stroke-width="3" opacity=".5"/><path d="M36 16c4-4 10-6 14-6s10 2 14 6" fill="none" stroke="STROKE" stroke-width="2" opacity=".3"/>`,
+      `<path d="M36 52c0-10 2-20 4-28c2-8 6-14 10-16c4 2 8 8 10 16c2 8 4 18 4 28z" fill="FILL"/><path d="M38 52c-6 0-10-4-12-10c2 4 6 6 10 6" fill="ACCENT" opacity=".4"/><path d="M62 52c6 0 10-4 12-10c-2 4-6 6-10 6" fill="ACCENT" opacity=".4"/><path d="M46 12c2-2 4-4 4-4s2 2 4 4" fill="STROKE" opacity=".3"/>`,
+      `<path d="M50 6c-18 0-26 12-26 24c0 8 2 14 6 20h40c4-6 6-12 6-20c0-12-8-24-26-24z" fill="FILL"/><path d="M26 36c-4 2-6 8-4 16" fill="none" stroke="FILL" stroke-width="4" opacity=".7"/><path d="M74 36c4 2 6 8 4 16" fill="none" stroke="FILL" stroke-width="4" opacity=".7"/><path d="M32 20c6-6 12-8 18-8s12 2 18 8" fill="none" stroke="ACCENT" stroke-width="2" opacity=".4"/><path d="M36 28c4 0 8-2 14-2s10 2 14 2" fill="none" stroke="STROKE" stroke-width="1.5" opacity=".2"/>`,
+      `<path d="M30 22c0-10 9-16 20-16s20 6 20 16v18c0 6-8 12-20 12s-20-6-20-12z" fill="FILL"/><path d="M30 22h40" stroke="STROKE" stroke-width="2" opacity=".3"/><rect x="34" y="12" width="32" height="10" rx="4" fill="ACCENT" opacity=".3"/>`,
+      `<path d="M50 4c-16 0-24 8-24 18v10c0 10 4 18 8 22h32c4-4 8-12 8-22v-10c0-10-8-18-24-18z" fill="FILL"/><path d="M30 22c4-12 12-16 20-16s16 4 20 16" fill="ACCENT" opacity=".4"/><path d="M34 22c0-6 8-10 16-10s16 4 16 10" fill="STROKE" opacity=".2"/>`
+    ];
+    const chessShapes = [
+      `<rect x="34" y="48" width="32" height="6" rx="2" fill="FILL"/><path d="M38 48v-14c0-4 2-8 6-10l-2-6h16l-2 6c4 2 6 6 6 10v14" fill="FILL"/><line x1="50" y1="10" x2="50" y2="20" stroke="ACCENT" stroke-width="3"/><line x1="44" y1="14" x2="56" y2="14" stroke="ACCENT" stroke-width="3"/><path d="M38 48h24" stroke="STROKE" stroke-width="1.5"/>`,
+      `<rect x="34" y="48" width="32" height="6" rx="2" fill="FILL"/><path d="M38 48v-16l-4-12h4l6 8 6-10 6 10 6-8h4l-4 12v16" fill="FILL"/><circle cx="34" cy="20" r="3" fill="ACCENT"/><circle cx="44" cy="14" r="3" fill="ACCENT"/><circle cx="50" cy="10" r="3" fill="ACCENT"/><circle cx="56" cy="14" r="3" fill="ACCENT"/><circle cx="66" cy="20" r="3" fill="ACCENT"/><path d="M38 48h24" stroke="STROKE" stroke-width="1.5"/>`,
+      `<rect x="36" y="48" width="28" height="6" rx="2" fill="FILL"/><path d="M42 48v-18c0-6 4-12 8-16c4 4 8 10 8 16v18" fill="FILL"/><path d="M50 14l-2 8h4z" fill="ACCENT" opacity=".6"/><ellipse cx="50" cy="10" rx="4" ry="4" fill="ACCENT"/><path d="M42 48h16" stroke="STROKE" stroke-width="1.5"/>`,
+      `<rect x="34" y="48" width="32" height="6" rx="2" fill="FILL"/><rect x="38" y="20" width="24" height="28" fill="FILL"/><rect x="34" y="14" width="32" height="8" fill="FILL"/><rect x="36" y="10" width="6" height="6" fill="FILL"/><rect x="47" y="10" width="6" height="6" fill="FILL"/><rect x="58" y="10" width="6" height="6" fill="FILL"/><path d="M38 48h24" stroke="STROKE" stroke-width="1.5"/><rect x="46" y="34" width="8" height="14" rx="2" fill="STROKE" opacity=".2"/>`,
+      `<rect x="34" y="48" width="32" height="6" rx="2" fill="FILL"/><path d="M42 48v-12c0-6-2-10-2-16c0-8 6-14 14-14c4 0 8 4 8 10l-4 6h6c2 4 0 10-4 14v12" fill="FILL"/><circle cx="50" cy="18" r="2" fill="STROKE" opacity=".5"/><path d="M42 30c2-2 6-2 8 0" fill="none" stroke="ACCENT" stroke-width="1.5"/>`,
+      `<rect x="36" y="48" width="28" height="6" rx="2" fill="FILL"/><path d="M40 48c0-8 4-14 4-20h12c0 6 4 12 4 20" fill="FILL"/><circle cx="50" cy="20" r="8" fill="FILL"/><path d="M40 48h20" stroke="STROKE" stroke-width="1.5"/><circle cx="50" cy="20" r="4" fill="STROKE" opacity=".15"/>`
+    ];
+    const floatShapes = [
+      `<ellipse cx="50" cy="40" rx="28" ry="14" fill="FILL" stroke="STROKE" stroke-width="1.5"/><path d="M36 28c0-10 4-18 4-18s2 4 2 10" fill="ACCENT"/><circle cx="38" cy="14" r="3" fill="ACCENT"/><circle cx="39" cy="13" r="1.2" fill="#111"/>`,
+      `<ellipse cx="50" cy="36" rx="28" ry="20" fill="FILL"/><ellipse cx="50" cy="36" rx="12" ry="8" fill="#89CFF0"/><ellipse cx="50" cy="36" rx="28" ry="20" fill="none" stroke="STROKE" stroke-width="2"/><circle cx="38" cy="28" r="3" fill="ACCENT" opacity=".7"/><circle cx="58" cy="28" r="2.5" fill="ACCENT" opacity=".6"/><circle cx="50" cy="22" r="2" fill="ACCENT" opacity=".5"/><circle cx="64" cy="36" r="2.5" fill="ACCENT" opacity=".6"/>`,
+      `<circle cx="50" cy="32" r="22" fill="FILL"/><path d="M50 10a22 22 0 0 1 0 44" fill="ACCENT" opacity=".5"/><path d="M32 18a22 22 0 0 0 0 28" fill="STROKE" opacity=".3"/><path d="M68 18a22 22 0 0 1 0 28" fill="STROKE" opacity=".3"/><circle cx="50" cy="32" r="22" fill="none" stroke="STROKE" stroke-width="1.5"/>`,
+      `<ellipse cx="50" cy="42" rx="26" ry="12" fill="FILL" stroke="STROKE" stroke-width="1.5"/><path d="M34 34c-4-8-2-20 2-24c2 4 4 10 2 18" fill="FILL"/><circle cx="33" cy="14" r="2.5" fill="ACCENT"/><circle cx="34" cy="13" r="1" fill="#111"/><path d="M32 18l-4 2" stroke="ACCENT" stroke-width="1.5"/>`,
+      `<ellipse cx="50" cy="40" rx="22" ry="16" fill="FILL" stroke="STROKE" stroke-width="1.5"/><path d="M42 24l4-14 4 10 4-10 4 14" fill="ACCENT"/><path d="M38 34h24" stroke="STROKE" stroke-width="1" opacity=".3"/><path d="M38 40h24" stroke="STROKE" stroke-width="1" opacity=".3"/>`,
+      `<ellipse cx="50" cy="42" rx="26" ry="12" fill="FILL" stroke="STROKE" stroke-width="1.5"/><path d="M32 34c0-8 4-16 8-18v14" fill="FILL"/><path d="M38 16l-4-10" stroke="ACCENT" stroke-width="2.5" stroke-linecap="round"/><circle cx="34" cy="22" r="2" fill="ACCENT"/><circle cx="35" cy="21" r=".8" fill="#111"/>`
+    ];
+    const tieShapes = [
+      `<path d="M46 8h8l2 12-6 36-6-36z" fill="FILL" stroke="STROKE" stroke-width="1"/><rect x="44" y="8" width="12" height="6" rx="1" fill="ACCENT"/><path d="M46 14l4 4 4-4" fill="none" stroke="STROKE" stroke-width="1" opacity=".3"/>`,
+      `<path d="M50 28l-20-10v20z" fill="FILL"/><path d="M50 28l20-10v20z" fill="FILL"/><rect x="46" y="24" width="8" height="8" rx="2" fill="ACCENT"/><path d="M30 18l20 10-20 10" fill="none" stroke="STROKE" stroke-width="1" opacity=".3"/><path d="M70 18l-20 10 20 10" fill="none" stroke="STROKE" stroke-width="1" opacity=".3"/>`,
+      `<path d="M28 12c8 4 16 8 22 20c6-12 14-16 22-20c-4 12-10 24-16 34h-12c-6-10-12-22-16-34z" fill="FILL" opacity=".85"/><path d="M28 12c8 4 16 8 22 20" fill="none" stroke="ACCENT" stroke-width="2" opacity=".4"/><path d="M72 12c-8 4-16 8-22 20" fill="none" stroke="ACCENT" stroke-width="2" opacity=".4"/><path d="M44 46h12" stroke="STROKE" stroke-width="1.5"/>`,
+      `<path d="M42 10h16l-2 16-6 8-6-8z" fill="FILL"/><path d="M44 26l6 14 6-14" fill="ACCENT" opacity=".6"/><rect x="42" y="10" width="16" height="6" rx="1" fill="STROKE" opacity=".3"/><path d="M46 16l4 6 4-6" fill="none" stroke="STROKE" stroke-width="1" opacity=".25"/>`,
+      `<rect x="32" y="24" width="36" height="28" rx="2" fill="STROKE" opacity=".15"/><path d="M38 24c0-8 4-14 12-14s12 6 12 14" fill="FILL"/><path d="M42 24c0-6 3-10 8-10s8 4 8 10" fill="ACCENT" opacity=".5"/><path d="M32 24h36" stroke="STROKE" stroke-width="1.5"/>`,
+      `<path d="M44 8h12v10l-2 14h-8l-2-14z" fill="FILL"/><path d="M44 18c-4 6-8 14-8 22h28c0-8-4-16-8-22" fill="FILL" opacity=".7"/><rect x="44" y="8" width="12" height="4" rx="1" fill="ACCENT"/><path d="M44 18h12" stroke="STROKE" stroke-width="1" opacity=".3"/>`
+    ];
+    const foodShapes = [
+      // Burger
+      `<ellipse cx="50" cy="22" rx="24" ry="8" fill="ACCENT"/><rect x="28" y="22" width="44" height="6" rx="1" fill="#2E8B2E" opacity=".7"/><rect x="26" y="28" width="48" height="5" fill="FILL"/><rect x="28" y="33" width="44" height="4" rx="1" fill="#C44D1A" opacity=".6"/><ellipse cx="50" cy="41" rx="24" ry="8" fill="ACCENT"/><circle cx="36" cy="18" r="1.5" fill="STROKE" opacity=".4"/><circle cx="50" cy="16" r="1.5" fill="STROKE" opacity=".4"/><circle cx="62" cy="18" r="1.5" fill="STROKE" opacity=".4"/>`,
+      // Fries
+      `<rect x="30" y="30" width="40" height="24" rx="3" fill="ACCENT"/><rect x="34" y="10" width="5" height="24" rx="2" fill="FILL"/><rect x="41" y="14" width="5" height="20" rx="2" fill="FILL"/><rect x="48" y="8" width="5" height="26" rx="2" fill="FILL"/><rect x="55" y="12" width="5" height="22" rx="2" fill="FILL"/><rect x="62" y="10" width="5" height="24" rx="2" fill="FILL"/><path d="M30 30h40" stroke="STROKE" stroke-width="1.5"/>`,
+      // Milkshake
+      `<path d="M36 20h28l-4 32h-20z" fill="FILL" stroke="STROKE" stroke-width="1.2"/><ellipse cx="50" cy="18" rx="16" ry="8" fill="ACCENT"/><circle cx="50" cy="14" r="6" fill="ACCENT"/><circle cx="46" cy="10" r="4" fill="ACCENT"/><circle cx="54" cy="10" r="4" fill="ACCENT"/><line x1="50" y1="6" x2="50" y2="2" stroke="STROKE" stroke-width="2"/><circle cx="50" cy="2" r="2" fill="ACCENT"/>`,
+      // Hot dog
+      `<ellipse cx="50" cy="36" rx="30" ry="12" fill="ACCENT"/><ellipse cx="50" cy="34" rx="26" ry="8" fill="FILL"/><path d="M28 34c8-2 16-2 22 0s14 2 22 0" fill="none" stroke="STROKE" stroke-width="2" opacity=".5"/><path d="M30 30c14 0 14 6 20 6s6-6 20-6" fill="none" stroke="#C44D1A" stroke-width="1.5" opacity=".6"/>`,
+      // Pie slice
+      `<path d="M50 12l28 38H22z" fill="FILL" stroke="STROKE" stroke-width="1.5"/><path d="M22 50h56" stroke="ACCENT" stroke-width="4"/><path d="M50 12l-4 30" fill="none" stroke="STROKE" stroke-width=".8" opacity=".2"/><circle cx="44" cy="30" r="2" fill="ACCENT" opacity=".5"/><circle cx="52" cy="36" r="2" fill="ACCENT" opacity=".5"/>`,
+      // Pizza slice
+      `<path d="M50 8l26 44H24z" fill="FILL"/><path d="M24 52l26-44 26 44" fill="none" stroke="STROKE" stroke-width="1.5"/><circle cx="44" cy="34" r="4" fill="ACCENT" opacity=".7"/><circle cx="54" cy="40" r="4" fill="ACCENT" opacity=".7"/><circle cx="48" cy="24" r="3" fill="ACCENT" opacity=".6"/>`
+    ];
+
+    const bagPalettes = [
+      { fill: '#2C2418', stroke: '#8B7355', accent: '#C9A84C' },
+      { fill: '#8B2035', stroke: '#D4A0A0', accent: '#E8C87A' },
+      { fill: '#F5E6D0', stroke: '#A68B6B', accent: '#D4AF37' },
+      { fill: '#1A1A2E', stroke: '#7B7FA0', accent: '#C0C0C0' },
+      { fill: '#3D2B1F', stroke: '#9E7C5A', accent: '#D4AF37' },
+      { fill: '#5C4033', stroke: '#A07855', accent: '#E8C87A' },
+      { fill: '#2D2D2D', stroke: '#8C8C8F', accent: '#C0C0C0' },
+      { fill: '#6B3A3A', stroke: '#C49292', accent: '#E8C87A' },
+      { fill: '#E8D5B7', stroke: '#8B7355', accent: '#B8860B' },
+      { fill: '#4A3728', stroke: '#B09070', accent: '#D4AF37' },
+      { fill: '#8B6914', stroke: '#D4AF37', accent: '#F5E6D0' },
+      { fill: '#556B7A', stroke: '#9AB0C0', accent: '#C0C0C0' },
+    ];
+    const fishPalettes = [
+      { fill: '#FF6B35', stroke: '#C44D1A', accent: '#FFB347' },
+      { fill: '#1E90FF', stroke: '#0D5CAB', accent: '#FFD700' },
+      { fill: '#E8444A', stroke: '#A02030', accent: '#FF8C94' },
+      { fill: '#20B2AA', stroke: '#148888', accent: '#98FB98' },
+      { fill: '#FF69B4', stroke: '#C44D8B', accent: '#FFB6C1' },
+      { fill: '#9370DB', stroke: '#6A3DAC', accent: '#DDA0DD' },
+      { fill: '#FFD700', stroke: '#BFA000', accent: '#FFF8DC' },
+      { fill: '#00CED1', stroke: '#008B8B', accent: '#7FFFD4' },
+      { fill: '#32CD32', stroke: '#228B22', accent: '#ADFF2F' },
+      { fill: '#FF4500', stroke: '#CC3700', accent: '#FFA07A' },
+    ];
+    const cocktailPalettes = [
+      { fill: '#FFD1DC', stroke: '#C4858F', accent: '#FF6B8A' },
+      { fill: '#E8F4D0', stroke: '#7A9B4A', accent: '#B5D66A' },
+      { fill: '#FFF3C0', stroke: '#C9A84C', accent: '#FFB347' },
+      { fill: '#D4E8FF', stroke: '#6A8EB5', accent: '#89CFF0' },
+      { fill: '#FFE0C0', stroke: '#C49060', accent: '#FF8C42' },
+      { fill: '#E8D5F0', stroke: '#9B72B0', accent: '#D4A0E8' },
+      { fill: '#C0F0E8', stroke: '#5A9E90', accent: '#7FDBCA' },
+      { fill: '#FFD700', stroke: '#B8960B', accent: '#FFF8DC' },
+      { fill: '#FF6B6B', stroke: '#C44D4D', accent: '#FFB3B3' },
+      { fill: '#F0E0D0', stroke: '#A08060', accent: '#D4AF87' },
+    ];
+    const mulletPalettes = [
+      { fill: '#8B6914', stroke: '#6B4F0F', accent: '#D4AF37' },
+      { fill: '#3B2314', stroke: '#1A0F08', accent: '#6B4530' },
+      { fill: '#C44D1A', stroke: '#8B3210', accent: '#FF8C42' },
+      { fill: '#1A1A1A', stroke: '#000', accent: '#444' },
+      { fill: '#D4A76A', stroke: '#A07840', accent: '#F0D090' },
+      { fill: '#8B4513', stroke: '#5C2E0A', accent: '#C49060' },
+      { fill: '#FFD700', stroke: '#C9A84C', accent: '#FFF8DC' },
+      { fill: '#704030', stroke: '#3E2218', accent: '#A06850' },
+    ];
+    const chessPalettes = [
+      { fill: '#1A1A1A', stroke: '#555', accent: '#D4AF37' },
+      { fill: '#F5E6D0', stroke: '#8B7355', accent: '#D4AF37' },
+      { fill: '#8B0000', stroke: '#550000', accent: '#FFD700' },
+      { fill: '#2C2C5A', stroke: '#5A5A8A', accent: '#C0C0C0' },
+      { fill: '#4A3728', stroke: '#2A1A0E', accent: '#E8C87A' },
+      { fill: '#C0C0C0', stroke: '#808080', accent: '#FFD700' },
+    ];
+    const floatPalettes = [
+      { fill: '#FF69B4', stroke: '#C44D8B', accent: '#FFB6C1' },
+      { fill: '#FFD700', stroke: '#C9A84C', accent: '#FF6B6B' },
+      { fill: '#87CEEB', stroke: '#4A90B0', accent: '#FF4500' },
+      { fill: '#FF6347', stroke: '#C43020', accent: '#FFD700' },
+      { fill: '#98FB98', stroke: '#4A9A4A', accent: '#FF69B4' },
+      { fill: '#DDA0DD', stroke: '#9B60A0', accent: '#FFD700' },
+      { fill: '#FFA07A', stroke: '#C07050', accent: '#20B2AA' },
+      { fill: '#F0E68C', stroke: '#B0A854', accent: '#FF1493' },
+    ];
+    const tiePalettes = [
+      { fill: '#1A3A5C', stroke: '#0D1F33', accent: '#D4AF37' },
+      { fill: '#8B2035', stroke: '#5A1020', accent: '#E8C87A' },
+      { fill: '#2D5A27', stroke: '#1A3A18', accent: '#C9A84C' },
+      { fill: '#4A2D6B', stroke: '#2A1840', accent: '#D4A0E8' },
+      { fill: '#C44D1A', stroke: '#8B3210', accent: '#FFD700' },
+      { fill: '#1A1A2E', stroke: '#0A0A18', accent: '#C0C0C0' },
+      { fill: '#8B6914', stroke: '#5A4410', accent: '#F5E6D0' },
+      { fill: '#556B7A', stroke: '#3A4A56', accent: '#E8C87A' },
+    ];
+    const foodPalettes = [
+      { fill: '#8B4513', stroke: '#5C2E0A', accent: '#F5D080' },  // bun brown + sesame
+      { fill: '#FFD700', stroke: '#C9A84C', accent: '#E83030' },  // fries gold + ketchup
+      { fill: '#FFB6C1', stroke: '#C48090', accent: '#FFF0F5' },  // strawberry shake
+      { fill: '#FF6347', stroke: '#C43020', accent: '#FFD700' },  // tomato + mustard
+      { fill: '#D2691E', stroke: '#8B4513', accent: '#FFF8DC' },  // chocolate pie
+      { fill: '#F5DEB3', stroke: '#C4A070', accent: '#E83030' },  // pizza dough
+      { fill: '#CD853F', stroke: '#8B6914', accent: '#90EE90' },  // pretzel
+      { fill: '#FFA07A', stroke: '#C07050', accent: '#F5E6D0' },  // salmon plate
+    ];
+
+    // ══════════ ICON REGISTRY & GENERIC SVG FACTORY ══════════
+    const iconRegistry = {
+      bag:      { shapes: bagShapes,      palettes: bagPalettes,      viewBox: '0 0 100 60' },
+      hat:      { shapes: hatShapes,      palettes: bagPalettes,      viewBox: '0 0 100 60' },
+      fish:     { shapes: fishShapes,     palettes: fishPalettes,     viewBox: '0 0 100 72' },
+      cocktail: { shapes: cocktailShapes, palettes: cocktailPalettes, viewBox: '0 0 100 60' },
+      mullet:   { shapes: mulletShapes,   palettes: mulletPalettes,   viewBox: '0 0 100 60' },
+      chess:    { shapes: chessShapes,    palettes: chessPalettes,    viewBox: '0 0 100 60' },
+      float:    { shapes: floatShapes,    palettes: floatPalettes,    viewBox: '0 0 100 60' },
+      tie:      { shapes: tieShapes,      palettes: tiePalettes,      viewBox: '0 0 100 60' },
+      food:     { shapes: foodShapes,     palettes: foodPalettes,     viewBox: '0 0 100 60' },
+    };
+
+    function hashName(name) {
+      let h = 0;
+      for (let i = 0; i < name.length; i++) h = ((h << 5) - h + name.charCodeAt(i)) | 0;
+      return Math.abs(h);
+    }
+
+    // Generic templated SVG generator — replaces 9 identical make*Svg functions
+    function makeTemplatedSvg(name, iconType) {
+      const cfg = iconRegistry[iconType];
+      if (!cfg) return '';
+      const h = hashName(name);
+      const shape = cfg.shapes[h % cfg.shapes.length];
+      const pal = cfg.palettes[h % cfg.palettes.length];
+      const svg = shape.replace(/FILL/g, pal.fill).replace(/STROKE/g, pal.stroke).replace(/ACCENT/g, pal.accent);
+      return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${cfg.viewBox}">${svg}</svg>`)}`;
+    }
+
+    // ══════════ FLAG SVG GENERATOR (90 Day shows) ══════════
+    const flagSvgs = {
+      us: `<rect width="100" height="60" fill="#B22234"/><rect y="9.2" width="100" height="4.6" fill="#fff"/><rect y="18.5" width="100" height="4.6" fill="#fff"/><rect y="27.7" width="100" height="4.6" fill="#fff"/><rect y="36.9" width="100" height="4.6" fill="#fff"/><rect y="46.2" width="100" height="4.6" fill="#fff"/><rect y="55.4" width="100" height="4.6" fill="#fff"/><rect width="40" height="32" fill="#3C3B6E"/>`,
+      ph: `<rect width="100" height="30" fill="#0038A8"/><rect y="30" width="100" height="30" fill="#CE1126"/><polygon points="0,0 40,30 0,60" fill="#fff"/><circle cx="14" cy="30" r="6" fill="#FCD116" fill-opacity=".7"/>`,
+      tr: `<rect width="100" height="60" fill="#E30A17"/><circle cx="42" cy="30" r="14" fill="#fff"/><circle cx="47" cy="30" r="11" fill="#E30A17"/><polygon points="56,30 51,24 58,28 51,32 58,28" fill="#fff" transform="rotate(10,56,30)"/>`,
+      co: `<rect width="100" height="30" fill="#FCD116"/><rect y="30" width="100" height="15" fill="#003893"/><rect y="45" width="100" height="15" fill="#CE1126"/>`,
+      no: `<rect width="100" height="60" fill="#EF2B2D"/><rect x="28" width="16" height="60" fill="#fff"/><rect y="22" width="100" height="16" fill="#fff"/><rect x="32" width="8" height="60" fill="#002868"/><rect y="26" width="100" height="8" fill="#002868"/>`,
+      za: `<rect width="100" height="60" fill="#007A4D"/><rect y="0" width="100" height="20" fill="#DE3831"/><rect y="40" width="100" height="20" fill="#002395"/><rect y="4" width="100" height="8" fill="#fff"/><rect y="48" width="100" height="8" fill="#fff"/><polygon points="0,0 36,30 0,60" fill="#000"/><polygon points="0,4 30,30 0,56" fill="#FFB612"/>`,
+      tn: `<rect width="100" height="60" fill="#E70013"/><circle cx="50" cy="30" r="16" fill="#fff"/><circle cx="53" cy="30" r="12" fill="#E70013"/><polygon points="48,18 50,28 40,22 56,22 46,28" fill="#E70013"/>`,
+      gb: `<rect width="100" height="60" fill="#012169"/><path d="M0,0 L100,60 M100,0 L0,60" stroke="#fff" stroke-width="10"/><path d="M0,0 L100,60 M100,0 L0,60" stroke="#C8102E" stroke-width="6"/><rect x="42" width="16" height="60" fill="#fff"/><rect y="22" width="100" height="16" fill="#fff"/><rect x="45" width="10" height="60" fill="#C8102E"/><rect y="25" width="100" height="10" fill="#C8102E"/>`,
+      do: `<rect width="100" height="60" fill="#CE1126"/><rect x="44" width="12" height="60" fill="#fff"/><rect y="24" width="100" height="12" fill="#fff"/><rect width="44" height="24" fill="#002D62"/><rect x="56" y="36" width="44" height="24" fill="#002D62"/>`,
+      rs: `<rect width="100" height="20" fill="#C6363C"/><rect y="20" width="100" height="20" fill="#0C4076"/><rect y="40" width="100" height="20" fill="#fff"/>`,
+    };
+
+    const castCountryMap = {
+      'Jovon': 'us', 'Annalyn': 'ph', 'Laura': 'us', 'Birkan': 'tr',
+      'Forrest': 'us', 'Sheena': 'ph', 'Lisa': 'us', 'Daniel': 'us',
+      'Rick': 'us', 'Trisha': 'us', 'Aviva': 'co', 'Stig': 'no',
+      'Emma': 'za', 'Ziad': 'tn', 'Elise': 'us', 'Joshua': 'us',
+      'Gino Palazzolo': 'us', 'Sophie Sierra': 'gb', 'Liz Woods': 'us',
+      'Colt Johnson': 'us', 'Cortney Reardanz': 'us',
+      'Pedro Jimeno': 'do', 'Kim Menzies': 'us', 'Vanja Grbic': 'rs',
+    };
+
+    function makeFlagSvg(name) {
+      const code = castCountryMap[name] || 'us';
+      const svg = flagSvgs[code] || flagSvgs.us;
+      return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60">${svg}</svg>`)}`;
+    }
+
+    // ══════════ AGE BADGE SVG GENERATOR (Sister Wives) ══════════
+    const castAgeMap = {
+      'Kody Brown': 56, 'Meri Brown': 54, 'Janelle Brown': 55,
+      'Christine Brown': 52, 'Robyn Brown': 46,
+      'Leon Brown': 28, 'Mariah Brown': 28, 'Maddie Brush': 29,
+      'Mykelti Padron': 28, 'Aspyn Thompson': 29,
+      'Paedon Brown': 26, 'Gwendlyn Brown': 23, 'Ysabel Brown': 21,
+      'Hunter Brown': 27, 'Garrison Brown': 26, 'Gabriel Brown': 23,
+    };
+
+    function makeAgeSvg(name) {
+      const age = castAgeMap[name] || hashName(name) % 40 + 20;
+      const hue = (age * 6) % 360;
+      const bg = `hsl(${hue}, 35%, 88%)`;
+      const ink = `hsl(${hue}, 40%, 30%)`;
+      const ring = `hsl(${hue}, 30%, 72%)`;
+      const svg = `<circle cx="50" cy="30" r="26" fill="${bg}" stroke="${ring}" stroke-width="2.5"/>` +
+        `<text x="50" y="30" text-anchor="middle" dominant-baseline="central" font-family="Georgia,serif" font-size="22" font-weight="700" fill="${ink}">${age}</text>`;
+      return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60">${svg}</svg>`)}`;
+    }
+
+    // ══════════ ICON DISPATCHER ══════════
+    function showIconType(showId) {
+      if (showId === 'ladies' || showId.includes('ladies-of-london')) return 'hat';
+      if (showId === 'belowdeck' || showId.includes('below-deck')) return 'fish';
+      if (showId === '90day' || showId === '90single' || showId.includes('90-day')) return 'flag';
+      if (showId === 'valley' || showId.includes('the-valley') || showId.includes('vanderpump')) return 'cocktail';
+      if (showId === 'hospitality' || showId.includes('southern-hospitality')) return 'cocktail';
+      if (showId.includes('plathville') || showId.includes('welcome-to-plathville')) return 'mullet';
+      if (showId.includes('traitor')) return 'chess';
+      if (showId.includes('sister-wives') || showId.includes('sister_wives')) return 'age';
+      if (showId.includes('summer-house') || showId.includes('summerhouse') || showId.includes('love-island') || showId.includes('loveisland')) return 'float';
+      if (showId === 'charm' || showId.includes('southern-charm')) return 'tie';
+      if (showId.includes('bob') && showId.includes('burger')) return 'food';
+      return 'bag';
+    }
+
+    function makeIconSvg(name, showId) {
+      const type = showIconType(showId);
+      if (type === 'flag') return makeFlagSvg(name);
+      if (type === 'age') return makeAgeSvg(name);
+      return makeTemplatedSvg(name, type);
+    }
+
+    // Replace all existing dicebear images with SVG icons on page load
+    function refreshAllCastIcons() {
+      document.querySelectorAll('.show-card-wrapper').forEach(wrapper => {
+        const showId = wrapper.dataset.showId || '';
+        const iconType = showIconType(showId);
+        wrapper.querySelectorAll('.cast-bubble').forEach(bubble => {
+          const name = bubble.dataset.name;
+          if (!name) return;
+          bubble.classList.remove('icon-flag', 'icon-fish');
+          if (iconType === 'flag') bubble.classList.add('icon-flag');
+          if (iconType === 'fish') bubble.classList.add('icon-fish');
+          const img = bubble.querySelector('img');
+          if (img) img.src = makeIconSvg(name, showId);
+          // Add name label if not already present
+          if (!bubble.querySelector('.bubble-name')) {
+            const span = document.createElement('span');
+            span.className = 'bubble-name';
+            span.textContent = name.split(' ')[0];
+            bubble.appendChild(span);
+          }
+        });
+      });
+    }
+    refreshAllCastIcons();
+
+    function renderCastBubbles(castRow, cast, showId) {
+      const iconType = showIconType(showId);
+      cast.forEach(name => {
+        const div = document.createElement('div');
+        div.className = 'cast-bubble';
+        if (iconType === 'flag') div.classList.add('icon-flag');
+        if (iconType === 'fish') div.classList.add('icon-fish');
+        div.dataset.name = name;
+        div.innerHTML = `<img src="${makeIconSvg(name, showId)}" alt=""><span class="bubble-name">${name.split(' ')[0]}</span>`;
+        castRow.appendChild(div);
+      });
+    }
+
+    async function fetchCastFromAPI(showName) {
+      try {
+        const res = await fetch('https://api.tvmaze.com/search/shows?q=' + encodeURIComponent(showName));
+        if (!res.ok) return null;
+        const results = await res.json();
+        if (!results.length) return null;
+        const tvmazeId = results[0].show.id;
+        const castRes = await fetch(`https://api.tvmaze.com/shows/${tvmazeId}/cast`);
+        if (!castRes.ok) return null;
+        const castData = await castRes.json();
+        // Take up to 12 cast members
+        return castData.slice(0, 12).map(c => c.person.name);
+      } catch(e) {
+        console.warn('Cast API fetch failed:', e);
+        return null;
+      }
+    }
+
+    async function populateCast(wrapper, showId) {
+      const castRow = wrapper.querySelector('.cast-row');
+      if (!castRow || castRow.children.length > 0) return;
+      const slug = showId.replace(/^custom-/, '').replace(/-\d+$/, '');
+      let cast = knownCasts[slug];
+      if (!cast) {
+        for (const [key, val] of Object.entries(knownCasts)) {
+          if (slug.includes(key) || key.includes(slug)) { cast = val; break; }
+        }
+      }
+      if (!cast) {
+        // Fetch from TVMaze API and cache
+        const showName = wrapper.querySelector('h3')?.textContent || slug.replace(/-/g, ' ');
+        cast = await fetchCastFromAPI(showName);
+        if (cast && cast.length) {
+          knownCasts[slug] = cast;
+        }
+      }
+      if (!cast) return;
+      renderCastBubbles(castRow, cast, showId);
+    }
+
+    // ══════════ SORT ALL SHOWS GRID ALPHABETICALLY ══════════
+    function sortKey(name) {
+      // Normalize so all Real Housewives variants sort under "RH of"
+      return shortenName(name).toLowerCase();
+    }
+    function sortShowsGrid() {
+      const grid = document.querySelector('.shows');
+      if (!grid) return;
+      const wrappers = [...grid.querySelectorAll('.show-card-wrapper')];
+      wrappers.sort((a, b) => {
+        const nameA = sortKey(a.querySelector('h3')?.textContent || '');
+        const nameB = sortKey(b.querySelector('h3')?.textContent || '');
+        return nameA.localeCompare(nameB);
+      });
+      wrappers.forEach(w => grid.appendChild(w));
+    }
+
+    function sortDaySlots() {
+      document.querySelectorAll('.day').forEach(day => {
+        const slots = [...day.querySelectorAll('.day-slot')];
+        if (slots.length < 2) return;
+        slots.sort((a, b) => {
+          const dateOrder = (a.dataset.streamingDate || '').localeCompare(b.dataset.streamingDate || '');
+          if (dateOrder) return dateOrder;
+          const nameA = sortKey(a.querySelector('.title')?.textContent || '');
+          const nameB = sortKey(b.querySelector('.title')?.textContent || '');
+          return nameA.localeCompare(nameB);
+        });
+        slots.forEach(s => day.appendChild(s));
+      });
+    }
+
+    sortShowsGrid();
+    sortDaySlots();
+
+    // Map broadcast networks → user's streaming apps (consolidated)
+    const streamingConfigs = {
+      peacock: { network: 'peacock', tag: 'tag-peacock', label: 'Peacock', slotBg: '#E4E5E9', slotColor: '#6E7075' },
+      max:     { network: 'max', tag: 'tag-max', label: 'Max', slotBg: '#EFE5C8', slotColor: '#8B6914' },
+      hulu:    { network: 'hulu', tag: 'tag-hulu', label: 'Hulu', slotBg: '#E4E5E9', slotColor: '#6E7075' },
+      youtube: { network: 'youtube', tag: 'tag-youtube', label: 'YouTube', slotBg: '#EFE5C8', slotColor: '#8B6914' },
+    };
+    const networkAliases = {
+      peacock: ['bravo', 'nbc', 'usa network'],
+      max:     ['tlc', 'hbo', 'hbo max', 'discovery', 'food network', 'hgtv'],
+      hulu:    ['abc', 'fox', 'fx', 'freeform'],
+      youtube: ['youtube'],
+    };
+    // Build flat lookup from aliases
+    const networkToStreaming = {};
+    for (const [key, aliases] of Object.entries(networkAliases)) {
+      for (const alias of aliases) networkToStreaming[alias] = streamingConfigs[key];
+    }
+    const defaultStreaming = streamingConfigs.peacock;
+
+    function mapToStreaming(networkName, webChannelName) {
+      const names = [networkName, webChannelName].filter(Boolean).map(n => n.toLowerCase());
+      for (const n of names) {
+        for (const [key, val] of Object.entries(networkToStreaming)) {
+          if (n.includes(key)) return val;
+        }
+      }
+      // Check if the webChannel itself IS one of the user's apps
+      for (const n of names) {
+        if (n.includes('peacock')) return streamingConfigs.peacock;
+        if (n.includes('hulu'))    return streamingConfigs.hulu;
+        if (n.includes('max') || n.includes('hbo')) return streamingConfigs.max;
+        if (n.includes('youtube')) return streamingConfigs.youtube;
+      }
+      return defaultStreaming;
+    }
+
+    const dayNameToIndex = { 'Sunday':0,'Monday':1,'Tuesday':2,'Wednesday':3,'Thursday':4,'Friday':5,'Saturday':6 };
+
+    // Look up show via TVMaze API
+    async function lookupShow(name) {
+      try {
+        const res = await fetch('https://api.tvmaze.com/search/shows?q=' + encodeURIComponent(name));
+        if (!res.ok) return null;
+        const results = await res.json();
+        if (!results.length) return null;
+        const show = results[0].show;
+        const netName = show.network?.name || '';
+        const webName = show.webChannel?.name || '';
+        const streaming = mapToStreaming(netName, webName);
+        const scheduleDays = show.schedule?.days || [];
+        // Streaming day = day after air day (next-day streaming), or air day for streaming-native
+        let dayIndex = new Date().getDay(); // fallback to today
+        if (scheduleDays.length > 0 && dayNameToIndex[scheduleDays[0]] !== undefined) {
+          const airDay = dayNameToIndex[scheduleDays[0]];
+          // If it's a streaming-native show (webChannel but no broadcast network), same day
+          dayIndex = show.network ? (airDay + 1) % 7 : airDay;
+        }
+        return { streaming, dayIndex, officialName: show.name };
+      } catch(e) {
+        console.warn('TVMaze lookup failed:', e);
+        return null;
+      }
+    }
+
+    // Get the .day column element by day index (0=Sun .. 6=Sat)
+    function getDayColumn(dayIndex) {
+      const days = document.querySelectorAll('.week-grid > .day');
+      return days[dayIndex] || null;
+    }
+
+    // ══════════ EPISODE INFO LOOKUP (TVMaze) ══════════
+    const showIdToTvmaze = {
+      atlanta: 597,
+      rhode: 88426,
+      '90day': 26534,
+      belowdeck: 57042,
+      '90single': 53727,
+      valley: 74090,
+      hospitality: 64702,
+      bevhills: 745,
+      ladies: 3070,
+      charm: 3248
+    };
+
+    function formatEpDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr + 'T00:00:00');
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    async function fetchTvmaze(path) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const response = await fetch('https://api.tvmaze.com' + path, {
+          cache: 'no-cache',
+          signal: AbortSignal.timeout(15000)
+        });
+        if (response.status === 429 && attempt === 0) {
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          continue;
+        }
+        if (!response.ok) throw new Error(`TVMaze returned HTTP ${response.status}`);
+        return response.json();
+      }
+    }
+
+    function expectedStreamingDate(episode, show) {
+      if (!episode?.airdate) return null;
+      const date = new Date(episode.airdate + 'T00:00:00Z');
+      if (Number.isNaN(date.getTime())) throw new Error('TVMaze returned an invalid episode date');
+      // Use the network's calendar date, not the viewer's timezone, for next-day estimates.
+      if (show.network) date.setUTCDate(date.getUTCDate() + 1);
+      return { date: date.toISOString().slice(0, 10), dayIndex: date.getUTCDay() };
+    }
+
+    function appendEpisodeInfo(parent, className, label, episode) {
+      if (!episode) return;
+      const section = document.createElement('div');
+      section.className = className;
+      const heading = document.createElement('strong');
+      heading.textContent = `${label} (${formatEpDate(episode.airdate) || 'date unannounced'})`;
+      const number = episode.number == null ? `S${episode.season} special` : `S${episode.season}E${episode.number}`;
+      const summary = episode.summary ? episode.summary.replace(/<[^>]+>/g, '').slice(0, 200) : '';
+      section.append(heading, document.createTextNode(` ${number}: "${episode.name}"${summary ? ' - ' + summary : ''}`));
+      parent.appendChild(section);
+    }
+
+    async function fetchEpisodeInfo(showName, showId) {
+      const wrapper = document.querySelector(`.show-card-wrapper[data-show-id="${showId}"]`);
+      if (!wrapper) return true;
+      const meta = wrapper.querySelector('.show-meta');
+      meta.textContent = 'Loading current episode info...';
+      const oldSlot = document.querySelector(`.day-slot[data-show-id="${showId}"]`);
+      if (oldSlot) removeSlotFromCalendar(oldSlot);
+
+      try {
+        let tvmazeId = showIdToTvmaze[showId] || wrapper.dataset.tvmazeId;
+        if (!tvmazeId) {
+          const query = showName.replace(/^RH of /i, 'The Real Housewives of ');
+          const results = await fetchTvmaze('/search/shows?q=' + encodeURIComponent(query));
+          if (!results.length) throw new Error('No matching show found on TVMaze');
+          tvmazeId = results[0].show.id;
+          wrapper.dataset.tvmazeId = tvmazeId;
+        }
+        const show = await fetchTvmaze(`/shows/${tvmazeId}?embed[]=previousepisode&embed[]=nextepisode`);
+        if (!wrapper.isConnected) return true;
+
+        const prev = show._embedded?.previousepisode;
+        const next = show._embedded?.nextepisode;
+        const expected = expectedStreamingDate(next, show);
+        const streaming = mapToStreaming(show.network?.name, show.webChannel?.name);
+        const availability = show.network ? 'Estimated streaming' : 'Listed streaming';
+        meta.replaceChildren();
+        const status = document.createElement('div');
+        status.textContent = expected
+          ? `${availability}: ${formatEpDate(expected.date)} on ${streaming.label}`
+          : 'No upcoming dated episode listed. This does not mean the show is canceled.';
+        meta.appendChild(status);
+        appendEpisodeInfo(meta, 'recap', 'Last broadcast', prev);
+        if (next && !expected) appendEpisodeInfo(meta, 'preview', 'Next episode', next);
+
+        const source = document.createElement('a');
+        source.href = `https://www.tvmaze.com/shows/${tvmazeId}`;
+        source.textContent = 'View on TVMaze';
+        source.target = '_blank';
+        source.rel = 'noopener';
+        meta.appendChild(source);
+
+        if (expected) {
+          const slot = document.createElement('div');
+          slot.className = 'day-slot';
+          slot.dataset.showId = showId;
+          slot.dataset.networks = streaming.network;
+          slot.dataset.streamingDate = expected.date;
+          slot.innerHTML = '<span class="time"></span><span class="title"></span><span class="net"></span><div class="recap-box"></div><button class="slot-delete" title="Remove show">&times;</button>';
+          slot.querySelector('.time').textContent = `${formatEpDate(expected.date)} - ${show.network ? 'estimated' : 'listed'}`;
+          slot.querySelector('.title').textContent = shortenName(showName);
+          slot.querySelector('.net').textContent = `${streaming.label}${show.network ? ' - next-day estimate' : ''}`;
+          const recap = slot.querySelector('.recap-box');
+          appendEpisodeInfo(recap, 'recap', 'Last broadcast', prev);
+          appendEpisodeInfo(recap, 'preview', 'Next broadcast', next);
+          const broadcast = document.createElement('div');
+          const channel = show.network || show.webChannel;
+          broadcast.textContent = `${channel?.name || 'Channel unlisted'}${next.airtime ? ' at ' + next.airtime : ''}${show.network?.country?.timezone ? ' (' + show.network.country.timezone + ')' : ''}. ${show.network ? 'Streaming availability is not confirmed by TVMaze.' : 'Streaming date as listed by TVMaze.'}`;
+          recap.appendChild(broadcast);
+          const day = getDayColumn(expected.dayIndex);
+          day.querySelector('.empty-day')?.remove();
+          day.appendChild(slot);
+        }
+        wrapper.dataset.networks = streaming.network;
+        const tag = wrapper.querySelector('.network-tag');
+        tag.className = 'network-tag ' + streaming.tag;
+        tag.textContent = streaming.label;
+        sortDaySlots();
+        applyFilter();
+        return true;
+      } catch(e) {
+        console.warn(`Episode lookup failed for ${showName}:`, e);
+        if (wrapper.isConnected) meta.textContent = `Episode info unavailable: ${e.message}. Reload to retry.`;
+        return false;
+      }
+    }
+
+    // Remove a day-slot and restore empty-day placeholder if the day column is now empty
+    function removeSlotFromCalendar(slot) {
+      const dayCol = slot.closest('.day');
+      slot.remove();
+      restoreEmptyDay(dayCol);
+    }
+
+    async function refreshAllEpisodeInfo() {
+      const status = document.getElementById('refresh-status');
+      const cards = [...document.querySelectorAll('.show-card-wrapper[data-show-id]')];
+      document.getElementById('schedule-date').textContent = new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      status.textContent = `Loading current episodes for ${cards.length} shows from TVMaze...`;
+      let failed = 0;
+      for (const card of cards) {
+        if (card.isConnected) {
+          const ok = await fetchEpisodeInfo(card.querySelector('h3').textContent, card.dataset.showId);
+          if (!ok) failed++;
+        }
+        await new Promise(resolve => setTimeout(resolve, 400));
+      }
+      const updated = new Date().toLocaleString();
+      const empty = document.querySelector('.day-slot') ? '' : ' No upcoming dated episodes listed.';
+      status.textContent = failed
+        ? `Refresh incomplete: ${failed} show(s) could not be loaded. See All Shows for errors; reload to retry. Last refresh attempt: ${updated}.`
+        : `Last refreshed: ${updated}.${empty} Episode data from TVMaze; streaming dates may be estimates.`;
+    }
+
+    // Shorten "The Real Housewives of X" → "RH of X"
+    function shortenName(name) {
+      return name.replace(/^(The\s+)?Real\s+Housewives\s+of\s+/i, 'RH of ');
+    }
+
+    function insertShow(name, dayIndex, streaming, showId, emoji, color, save) {
+      name = shortenName(name);
+      // ── Show card in "All Shows" ──
+      const wrapper = document.createElement('div');
+      wrapper.className = 'show-card-wrapper';
+      wrapper.dataset.networks = streaming.network;
+      wrapper.dataset.showId = showId;
+      wrapper.innerHTML = `
+        <div class="show-card" style="cursor:pointer;position:relative">
+          <div class="show-info">
+            <h3>${name}</h3>
+            <div class="show-meta">Loading current episode info...</div>
+            <span class="network-tag ${streaming.tag}">${streaming.label}</span>
+          </div>
+          <button class="delete-btn" title="Remove show">&times;</button>
+</div>
+        <div class="cast-row"></div>
+      `;
+      document.querySelector('.shows').appendChild(wrapper);
+      populateCast(wrapper, showId);
+
+      if (save) fetchEpisodeInfo(name, showId);
+
+      sortShowsGrid();
+      sortDaySlots();
+
+      if (save) {
+        wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        wrapper.style.animation = 'fadeInUp .5s ease';
+        if (activeFilter) applyFilter();
+        // Persist
+        try {
+          const added = JSON.parse(localStorage.getItem('rtvAddedShows') || '[]');
+          added.push({ id: showId, name, networkKey: streaming.network, emoji, color, dayIndex });
+          localStorage.setItem('rtvAddedShows', JSON.stringify(added));
+        } catch(e) {}
+      }
+    }
+
+    async function addShow(name) {
+      name = name.trim();
+      if (!name) return;
+
+      const addBtn = document.getElementById('addShowBtn');
+      addBtn.textContent = '…';
+      addBtn.disabled = true;
+
+      const lookup = await lookupShow(name);
+      const streaming = lookup ? lookup.streaming : defaultStreaming;
+      const dayIndex = lookup ? lookup.dayIndex : new Date().getDay();
+      const displayName = lookup ? lookup.officialName : name;
+
+      const emoji = '';
+      const color = 'inherit';
+      const showId = 'custom-' + displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now();
+
+      insertShow(displayName, dayIndex, streaming, showId, emoji, color, true);
+
+      addBtn.textContent = 'Add';
+      addBtn.disabled = false;
+      closeAddShow();
+    }
+
+    // ── Inline add-show toggle ──
+    const addTrigger = document.getElementById('addShowTrigger');
+    const addInput = document.getElementById('addShowInput');
+
+    function openAddShow() {
+      addTrigger.classList.add('active');
+      setTimeout(() => addInput.focus(), 50);
+    }
+    function closeAddShow() {
+      addTrigger.classList.remove('active');
+      addInput.value = '';
+    }
+    addTrigger.addEventListener('click', (e) => {
+      if (e.target.closest('.add-show-inline')) return;
+      e.stopPropagation();
+      if (addTrigger.classList.contains('active')) closeAddShow();
+      else openAddShow();
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.add-show-card')) closeAddShow();
+    });
+
+    // ── Restore saved shows on load ──
+    try {
+      const deleted = getDeletedShows();
+      const added = JSON.parse(localStorage.getItem('rtvAddedShows') || '[]');
+      added.forEach(show => {
+        if (deleted.includes(show.id)) return;
+        const showId = show.id || 'custom-' + show.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        // Reconstruct streaming info from saved networkKey
+        const streaming = Object.values(networkToStreaming).find(s => s.network === show.networkKey) || defaultStreaming;
+        insertShow(show.name, show.dayIndex || 0, streaming, showId, '', 'inherit', false);
+      });
+    } catch(e) { console.warn('Restore shows error:', e); }
+
+    // ── Form handlers ──
+    document.getElementById('addShowBtn').addEventListener('click', () => {
+      addShow(addInput.value);
+      addInput.value = '';
+    });
+    addInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        addShow(e.target.value);
+        e.target.value = '';
+      }
+    });
+    refreshAllEpisodeInfo();
+  </script>
+</body>
+</html>
